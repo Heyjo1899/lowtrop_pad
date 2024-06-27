@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "lowtrop-pad"
+version = "0.1.0"
+description = ""
+authors = ["Heyjo1899 <jonathan.fipper@edu.uni-graz.at>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+numpy = "^2.0.0"
+pandas = "^2.2.2"
+ipykernel = "^6.29.4"
+matplotlib = "^3.9.0"
+ruff = "^0.4.10"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
