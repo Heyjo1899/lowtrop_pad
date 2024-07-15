@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+from datetime import datetime 
 
 
 def load_and_reduce_profile_top(directory_path, red_n=3):
@@ -210,3 +211,44 @@ def average_profiles_by_vertical_bins(
         df = xq2_avg[key]
         directory = key[4:12]
         df.to_csv(os.path.join(output_directory, directory, file_name), index=False)
+
+def extract_profile_times_and_coords(folder_path):
+    """
+    Extracts the first value in the 'time', 'lat', and 'lon' columns from each profile in the given folder 
+    and returns them in a DataFrame.
+
+    Parameters:
+    folder_path (str): Path to the folder containing the profiles.
+    
+    Returns:
+    pd.DataFrame: DataFrame containing the extracted times, latitudes, and longitudes of the profiles.
+    """
+    # List to store the extracted data
+    data_list = []
+
+    # Walk through all directories and files
+    for root, dirs, files in os.walk(folder_path):
+        for file_name in files:
+            if file_name.endswith(".csv"):
+                file_path = os.path.join(root, file_name)
+                
+                # Load the profile data
+                df_profile = pd.read_csv(file_path)
+                
+                # Extract the first value in the 'time' column
+                first_time = df_profile['time'].iloc[0]
+                
+                # Convert the first time to datetime format
+                first_time_dt = datetime.strptime(first_time, '%Y-%m-%d %H:%M:%S')
+                
+                # Extract the first value in the 'lat' and 'lon' columns
+                first_lat = df_profile['lat'].iloc[0]
+                first_lon = df_profile['lon'].iloc[0]
+                
+                # Append to the list
+                data_list.append({'time': first_time_dt, 'latitude': first_lat, 'longitude': first_lon, 'file_name': file_name})
+    
+    # Create a DataFrame from the extracted data
+    df_times_profiles = pd.DataFrame(data_list, columns=['time', 'latitude', 'longitude', 'file_name'])
+    
+    return df_times_profiles
