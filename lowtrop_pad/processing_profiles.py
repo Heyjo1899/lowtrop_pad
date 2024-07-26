@@ -3,21 +3,23 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
+
 def split_and_concatenate(file):
     # Remove the file ending
     file = file.replace(".csv", "")
     # Find the first underscore
-    first_underscore = file.find('_')
+    first_underscore = file.find("_")
     # Find the last hyphen
-    last_hyphen = file.rfind('-')
+    last_hyphen = file.rfind("-")
     # Get the parts before the first underscore and after the last hyphen
     part_before_underscore = file[:first_underscore]
     if part_before_underscore == "avg":
         part_before_underscore = "XQ2"
-    part_after_hyphen = file[last_hyphen + 1:]
+    part_after_hyphen = file[last_hyphen + 1 :]
     # Concatenate the first and last parts
     result = f"{part_before_underscore} {part_after_hyphen}"
     return result
+
 
 def load_and_reduce_profile_top(directory_path, red_n=3):
     """
@@ -278,7 +280,10 @@ def extract_profile_times_and_coords(folder_path):
 
     return df_times_profiles
 
-def save_coordinates_from_profiles(profile_path1, profile_path2, profile_path3, output_path):
+
+def save_coordinates_from_profiles(
+    profile_path1, profile_path2, profile_path3, output_path
+):
     """
     Read out the coordinates from the profile directories and store them as a csv.
     profile_path (str): Path to the folder of profiles. Can take 3 different paths (XQ2, CARRA, ERA5).
@@ -309,7 +314,7 @@ def save_coordinates_from_profiles(profile_path1, profile_path2, profile_path3, 
 
                 # taking just the data type of the file name
                 short_file_name = split_and_concatenate(file_name)
-                first_space = short_file_name.find(' ')
+                first_space = short_file_name.find(" ")
                 data_type = short_file_name[:first_space]
 
                 # Append to the list
@@ -343,7 +348,7 @@ def save_coordinates_from_profiles(profile_path1, profile_path2, profile_path3, 
 
                 # taking just the data type of the file name
                 short_file_name = split_and_concatenate(file_name)
-                first_space = short_file_name.find(' ')
+                first_space = short_file_name.find(" ")
                 data_type = short_file_name[:first_space]
 
                 # Append to the list
@@ -377,7 +382,7 @@ def save_coordinates_from_profiles(profile_path1, profile_path2, profile_path3, 
 
                 # taking just the data type of the file name
                 short_file_name = split_and_concatenate(file_name)
-                first_space = short_file_name.find(' ')
+                first_space = short_file_name.find(" ")
                 data_type = short_file_name[:first_space]
 
                 # Append to the list
@@ -395,8 +400,7 @@ def save_coordinates_from_profiles(profile_path1, profile_path2, profile_path3, 
         data_list, columns=["time", "latitude", "longitude", "data_type", "file_name"]
     )
     # taking the date from current file name for storing folder
-    date = file_name[file_name.find('-') - 8 : file_name.find('-')]
+    date = file_name[file_name.find("-") - 8 : file_name.find("-")]
 
     os.makedirs(output_path, exist_ok=True)
-    df_coordinates.to_csv(f'{output_path}//coor-{date}.csv')
-        
+    df_coordinates.to_csv(f"{output_path}//coor-{date}.csv")

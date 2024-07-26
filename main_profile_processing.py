@@ -3,7 +3,7 @@ from lowtrop_pad.processing_profiles import (
     load_and_reduce_profile_top,
     average_profiles_by_vertical_bins,
     extract_profile_times_and_coords,
-    save_coordinates_from_profiles
+    save_coordinates_from_profiles,
 )
 from lowtrop_pad.reanalysis_processing import (
     merge_era5_with_height_info,
@@ -56,9 +56,11 @@ if False:
         output_folder="data\\reanalysis\\CARRA_extracted_profiles",
     )
 
-if False: 
+if False:
     xq2_path = "data\\xq2\\averaged_profiles_custom_3_5_10_20\\20230810"
     carra_path = "data\\reanalysis\\CARRA_extracted_profiles\\20230810"
     era5_path = "data\\reanalysis\\ERA5_extracted_profiles\\20230810"
 
-    save_coordinates_from_profiles(xq2_path, carra_path, era5_path, output_path="data\\coordinates_of_profiles")
+    save_coordinates_from_profiles(
+        xq2_path, carra_path, era5_path, output_path="data\\coordinates_of_profiles"
+    )
