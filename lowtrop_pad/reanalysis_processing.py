@@ -130,7 +130,7 @@ def extract_CARRA_profiles_to_csv(df_times_profiles, file_path_carra, output_fol
         lat_diff = np.abs(latitude_values - row["latitude"])
         lon_diff = np.abs(longitude_values - row["longitude"])
 
-        # Combine lat and lon differences to get the nearest point in 2D space
+        # Combine lat and lon differences to get the nearest point by euclidian distance in 2D space
         total_diff = np.sqrt(lat_diff**2 + lon_diff**2)
         lat_idx, lon_idx = np.unravel_index(total_diff.argmin(), total_diff.shape)
 
@@ -167,4 +167,4 @@ def extract_CARRA_profiles_to_csv(df_times_profiles, file_path_carra, output_fol
         # Save the temperature profile to CSV
         profile_t.to_csv(output_file_path, index=False)
 
-        ds_carra.close()
+    ds_carra.close()

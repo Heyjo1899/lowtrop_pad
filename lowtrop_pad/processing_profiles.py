@@ -3,6 +3,21 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
+def split_and_concatenate(file):
+    # Remove the file ending
+    file = file.replace(".csv", "")
+    # Find the first underscore
+    first_underscore = file.find('_')
+    # Find the last hyphen
+    last_hyphen = file.rfind('-')
+    # Get the parts before the first underscore and after the last hyphen
+    part_before_underscore = file[:first_underscore]
+    if part_before_underscore == "avg":
+        part_before_underscore = "XQ2"
+    part_after_hyphen = file[last_hyphen + 1:]
+    # Concatenate the first and last parts
+    result = f"{part_before_underscore} {part_after_hyphen}"
+    return result
 
 def load_and_reduce_profile_top(directory_path, red_n=3):
     """
@@ -262,3 +277,126 @@ def extract_profile_times_and_coords(folder_path):
     )
 
     return df_times_profiles
+
+def save_coordinates_from_profiles(profile_path1, profile_path2, profile_path3, output_path):
+    """
+    Read out the coordinates from the profile directories and store them as a csv.
+    profile_path (str): Path to the folder of profiles. Can take 3 different paths (XQ2, CARRA, ERA5).
+    output_path (str): Path to the output folder.
+    """
+
+    # List to store the extracted data
+    data_list = []
+
+    # Walk through all directories and files of profile path 1
+    for root, dirs, files in os.walk(profile_path1):
+        for file_name in files:
+            if file_name.endswith(".csv"):
+                file_path = os.path.join(root, file_name)
+
+                # Load the profile data
+                df_profile = pd.read_csv(file_path)
+
+                # Extract the first value in the 'time' column
+                first_time = df_profile["time"].iloc[0]
+
+                # Convert the first time to datetime format
+                first_time_dt = datetime.strptime(first_time, "%Y-%m-%d %H:%M:%S")
+
+                # Extract the first value in the 'lat' and 'lon' columns
+                first_lat = df_profile["lat"].iloc[0]
+                first_lon = df_profile["lon"].iloc[0]
+
+                # taking just the data type of the file name
+                short_file_name = split_and_concatenate(file_name)
+                first_space = short_file_name.find(' ')
+                data_type = short_file_name[:first_space]
+
+                # Append to the list
+                data_list.append(
+                    {
+                        "time": first_time_dt,
+                        "latitude": first_lat,
+                        "longitude": first_lon,
+                        "data_type": data_type,
+                        "file_name": file_name,
+                    }
+                )
+    # Walk through all directories and files of profile path 2
+    for root, dirs, files in os.walk(profile_path2):
+        for file_name in files:
+            if file_name.endswith(".csv"):
+                file_path = os.path.join(root, file_name)
+
+                # Load the profile data
+                df_profile = pd.read_csv(file_path)
+
+                # Extract the first value in the 'time' column
+                first_time = df_profile["time"].iloc[0]
+
+                # Convert the first time to datetime format
+                first_time_dt = datetime.strptime(first_time, "%Y-%m-%d %H:%M:%S")
+
+                # Extract the first value in the 'lat' and 'lon' columns
+                first_lat = df_profile["lat"].iloc[0]
+                first_lon = df_profile["lon"].iloc[0]
+
+                # taking just the data type of the file name
+                short_file_name = split_and_concatenate(file_name)
+                first_space = short_file_name.find(' ')
+                data_type = short_file_name[:first_space]
+
+                # Append to the list
+                data_list.append(
+                    {
+                        "time": first_time_dt,
+                        "latitude": first_lat,
+                        "longitude": first_lon,
+                        "data_type": data_type,
+                        "file_name": file_name,
+                    }
+                )
+    # Walk through all directories and files of profile path 3
+    for root, dirs, files in os.walk(profile_path3):
+        for file_name in files:
+            if file_name.endswith(".csv"):
+                file_path = os.path.join(root, file_name)
+
+                # Load the profile data
+                df_profile = pd.read_csv(file_path)
+
+                # Extract the first value in the 'time' column
+                first_time = df_profile["time"].iloc[0]
+
+                # Convert the first time to datetime format
+                first_time_dt = datetime.strptime(first_time, "%Y-%m-%d %H:%M:%S")
+
+                # Extract the first value in the 'lat' and 'lon' columns
+                first_lat = df_profile["lat"].iloc[0]
+                first_lon = df_profile["lon"].iloc[0]
+
+                # taking just the data type of the file name
+                short_file_name = split_and_concatenate(file_name)
+                first_space = short_file_name.find(' ')
+                data_type = short_file_name[:first_space]
+
+                # Append to the list
+                data_list.append(
+                    {
+                        "time": first_time_dt,
+                        "latitude": first_lat,
+                        "longitude": first_lon,
+                        "data_type": data_type,
+                        "file_name": file_name,
+                    }
+                )
+    # Create a DataFrame from the extracted data
+    df_coordinates = pd.DataFrame(
+        data_list, columns=["time", "latitude", "longitude", "data_type", "file_name"]
+    )
+    # taking the date from current file name for storing folder
+    date = file_name[file_name.find('-') - 8 : file_name.find('-')]
+
+    os.makedirs(output_path, exist_ok=True)
+    df_coordinates.to_csv(f'{output_path}//coor-{date}.csv')
+        
