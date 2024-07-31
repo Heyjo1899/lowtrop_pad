@@ -207,9 +207,16 @@ def plot_xq2_vs_reanalysis_profiles_of_day(
         plt.show()
 
 
-def plot_Asiaq_station_data(data_string, start_date, end_date):
+def plot_Asiaq_station_data(data_path, start_date, end_date):
+    """
+    Plot Asiaq station data for a given date range.
+    Parameters:
+    data_path (str): Path to the CSV file containing the data.
+    start_date (str): Start date in the format "YYYY-MM-DD HH:MM:SS".
+    end_date (str): End date in the format "YYYY-MM-DD HH:MM:SS".
+    """
     # Parse the data into a pandas DataFrame
-    df = pd.read_csv(data_string, sep=";", parse_dates=["DateTime"], dayfirst=True)
+    df = pd.read_csv(data_path, sep=";", parse_dates=["DateTime"], dayfirst=True)
 
     # Filter the data by start and end dates
     mask = (df["DateTime"] >= start_date) & (df["DateTime"] <= end_date)
@@ -296,3 +303,80 @@ def plot_Asiaq_station_data(data_string, start_date, end_date):
     output_filename = f"Asiaq_station_data_{start_date[0:10]}_{end_date[0:10]}.png"
     os.makedirs("plots\\met_station_plots", exist_ok=True)
     plt.savefig(f"plots\\met_station_plots\\{output_filename}", dpi=300)
+
+def plot_merged_and_resampled_profiles(file_path, x_varname, y_varname, file_ending, output_path, output_filename):
+    """
+    
+    """
+    # Initialize the plot
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    # Define colors for different surfaces
+    color_map = {
+        "tundra": "brown",
+        "ice": "lightsteelblue",
+        "water": "darkblue",
+        "lake": "green",
+    }
+
+    # Define line styles for different datasets
+    line_styles = {
+        "xq2_T": "-",
+        "carra_T": "--",
+        "era5_T": ":",
+    }
+
+    # Get a list of all files in the directory
+    files = os.listdir(file_path)
+
+    # Loop through the files and plot the data
+    for root, dirs, files in os.walk(file_path):
+        for file in files:
+            if file.endswith(file_ending):
+                file_path = os.path.join(root, file)
+                df = pd.read_csv(file_path)
+
+                # Determine the color based on the file ending
+                for key in color_map.keys():
+                    if key in file:
+                        color = color_map[key]
+                        break
+
+                # Plot each temperature profile with different line styles
+                for temp_column in ["xq2_T", "carra_T", "era5_T"]:
+                    ax.plot(
+                        df[temp_column],
+                        df[y_varname],
+                        linestyle=line_styles[temp_column],
+                        linewidth=1.5,
+                        color=color
+                    )
+
+    # Add grid
+    ax.grid(True)
+
+    # Create custom legend entries for line styles
+    handles = []
+    labels = []
+
+    for key, style in line_styles.items():
+        handles.append(plt.Line2D([0, 1], [0, 0], color='black', linestyle=style, linewidth=1.5))
+        labels.append(key)
+
+    # Create custom legend entries for colors
+    for key, color in color_map.items():
+        handles.append(plt.Line2D([0, 1], [0, 0], color=color, linestyle='-', linewidth=1.5))
+        labels.append(key)
+
+    ax.legend(handles, labels, title="Legend")
+
+    # Add labels and title
+    ax.set_xlabel(f'{x_varname} (°C)')
+    ax.set_ylabel(f'{y_varname} (m)')
+    ax.set_title('Temperature Profiles above Different Surfaces')
+    plt.tight_layout()
+    
+    # Save the plot
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+    plt.savefig(os.path.join(output_path, output_filename))

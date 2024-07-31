@@ -3,9 +3,11 @@ from lowtrop_pad.plotting_profiles import (
     plot_raw_and_smoothed_profiles_of_day,
     plot_xq2_vs_reanalysis_profiles_of_day,
     plot_Asiaq_station_data,
+    plot_merged_and_resampled_profiles,
 )
 from lowtrop_pad.plotting_synoptic import plot_era5_synoptic
 
+# Plotting only xq2 profiles of a specific Day raw and smoothed
 if False:
     date = "20230814"
     directory_path_smoothed = os.path.join("data", "xq2", "averaged_profiles_20", date)
@@ -22,7 +24,7 @@ if False:
         file_ending=".csv",
     )
 
-# Plotting profiles of a specific Day
+# Plotting xq2 and raw reanalysis profiles of a specific Day
 if False:
     date = "20230815"
     xq_2_path = os.path.join("data/xq2/averaged_profiles_custom_3_5_10_20", date)
@@ -41,7 +43,7 @@ if False:
         output_filename=None,
     )
 
-# Plotting all profiles of each day over LOOP
+# Plotting all profiles (not resampled) of each day over LOOP
 if False:
     base_xq2_path = "data/xq2/averaged_profiles_custom_3_5_10_20"
     base_carra_path = "data/reanalysis/CARRA_extracted_profiles"
@@ -73,15 +75,31 @@ if False:
             output_filename=None,
         )
 
+# Plotting Asiaq station data over specified Period (Atmospheric Monitoring Hut)
 if False:
     start_date = "2023-08-01 10:00:00"
     end_date = "2023-08-01 16:00:00"
-    # Plotting Asiaq station data over Field Period (Atmospheric Monitoring Hut)
     plot_Asiaq_station_data(
         "data\\met_stations\\Asiaq_met_VRS.csv", start_date, end_date
     )
 
-# plotting synoptic single plot
+# Plotting merged and resampled profiles of all days over loop
+if False:
+    interpol_path = r"C:\Users\jonat\OneDrive - Universität Graz\MASTERARBEIT\Analysis\lowtrop_pad\data\merged_interpol_profiles"
+    output_dir = r"C:\Users\jonat\OneDrive - Universität Graz\MASTERARBEIT\Analysis\lowtrop_pad\plots\plots_of_day_merged"
+
+    for root, dirs, files in os.walk(interpol_path):
+        for dir in dirs:
+            plot_merged_and_resampled_profiles(
+                file_path=os.path.join(root, dir),
+                x_varname='T',
+                y_varname='alt_ag',
+                file_ending='.csv',
+                output_path=output_dir,
+                output_filename=f'{dir}_temperature_profiles.png'
+            )
+
+# plotting synoptic setting single plot for a specific date and time
 if False:
     date = "20230801"
     time = "12"
@@ -96,7 +114,7 @@ if False:
     )
 
 # plotting synoptic all days + timesteps plots
-if True:
+if False:
     base_path = "data/reanalysis/ERA5_extracted_profiles"  # Path to the folder containing date subfolders
     nc_file_path = "G:\\LOWTROP_VRS\\data\\reanalysis\\ERA5_synoptic.nc"
     variable_to_plot = "z"
