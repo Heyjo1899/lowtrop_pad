@@ -4,6 +4,7 @@ import numpy as np
 from datetime import datetime
 import math
 
+
 def split_and_concatenate(file):
     # Remove the file ending
     file = file.replace(".csv", "")
@@ -406,7 +407,7 @@ def save_coordinates_from_profiles(
     df_coordinates.to_csv(f"{output_path}//coor-{date}.csv")
 
 
-def resample_profile(df, interpolation_method='pchip', step=1):
+def resample_profile(df, interpolation_method="pchip", step=1):
     """
     Resample and interpolate profile to a common altitude grid based on 'alt_ag'.
 
@@ -418,19 +419,19 @@ def resample_profile(df, interpolation_method='pchip', step=1):
     Return:
     pd.DataFrame: Resampled and interpolated DataFrame.
     """
-    
+
     # Ensure the DataFrame is sorted by 'alt_ag'
-    df = df.sort_values(by='alt_ag')
+    df = df.sort_values(by="alt_ag")
 
     # Convert 'alt_ag' to numeric
-    df['alt_ag'] = pd.to_numeric(df['alt_ag'])
+    df["alt_ag"] = pd.to_numeric(df["alt_ag"])
 
     # Calculate start and stop value
-    start = math.floor(df['alt_ag'].min())
-    stop = math.ceil(df['alt_ag'].max()) + 1
+    start = math.floor(df["alt_ag"].min())
+    stop = math.ceil(df["alt_ag"].max()) + 1
 
     # Set index to 'alt_ag'
-    df.set_index('alt_ag', inplace=True)
+    df.set_index("alt_ag", inplace=True)
 
     # Convert object dtype columns to suitable numeric types before interpolation
     df = df.infer_objects()
@@ -439,30 +440,37 @@ def resample_profile(df, interpolation_method='pchip', step=1):
     alt_resampled = np.arange(start, stop, step)
 
     # Interpolate data
-    df_resampled = df.reindex(df.index.union(alt_resampled)).sort_index().interpolate(method=interpolation_method).loc[alt_resampled]
+    df_resampled = (
+        df.reindex(df.index.union(alt_resampled))
+        .sort_index()
+        .interpolate(method=interpolation_method)
+        .loc[alt_resampled]
+    )
     df_resampled.reset_index(inplace=True)
-    
+    # Add the time of the first row to the resampled DataFrame
+    df_resampled["time"] = df["time"].iloc[0]
+
     return df_resampled
 
-  
 
-def read_and_resample_profiles(profile_dir, prefix, interpolation_method='pchip', step=1):
+def read_and_resample_profiles(
+    profile_dir, prefix, interpolation_method="pchip", step=1
+):
     """
     Read and resample profiles from CSV files in a specified directory.
 
     Parameters:
     profile_dir (str): Path to the directory containing the CSV files.
-    prefix (str): Prefix to add to the column names. Used for merging in net function.
+    prefix (str): Prefix to add to the column names. Used for merging in next function.
     interpolation_method (str): Interpolation method to use. Default is 'pchip'.
     step (int): Step size for resampling. Default is 1.
     """
     profiles = {}
     for root, _, files in os.walk(profile_dir):
         for file_name in files:
-        
             # Extract common part from "2023" onwards
-            if '2023' in file_name:
-                common_part = '2023' + file_name.split('2023', 1)[1]
+            if "2023" in file_name:
+                common_part = "2023" + file_name.split("2023", 1)[1]
             else:
                 print(f"Skipping file {file_name}")
                 continue  # Skip files that do not have "2023" in their name
@@ -475,16 +483,27 @@ def read_and_resample_profiles(profile_dir, prefix, interpolation_method='pchip'
             profiles[common_part] = df_resampled
     return profiles
 
+
 def merge_profiles(profile1, profile2, profile3):
     """
     Merge three profiles based on 'alt_ag'.
     """
-    df_merged = pd.merge(profile1, profile2, on='alt_ag', how='outer')
-    df_merged = pd.merge(df_merged, profile3, on='alt_ag', how='outer')
+    df_merged = pd.merge(profile1, profile2, on="alt_ag", how="outer")
+    df_merged = pd.merge(df_merged, profile3, on="alt_ag", how="outer")
     return df_merged
 
 
-def resample_interpolate_merge_profiles(profile_path1, profile_path2, profile_path3, output_directory, prefix_1 = 'xq2', prefix_2 = 'carra', prefix_3 = 'era5', interpolation_method='pchip', step=1):
+def resample_interpolate_merge_profiles(
+    profile_path1,
+    profile_path2,
+    profile_path3,
+    output_directory,
+    prefix_1="xq2",
+    prefix_2="carra",
+    prefix_3="era5",
+    interpolation_method="pchip",
+    step=1,
+):
     """
     Resample, interpolate, and merge profiles from three different directories with helper functions.
     Store the merged profiles in the specified output directory.
@@ -495,14 +514,20 @@ def resample_interpolate_merge_profiles(profile_path1, profile_path2, profile_pa
     interpolation_method (str): Interpolation method to use. Default is 'pchip'.
     step (int): Step size for resampling. Default is 1.
     """
-    profiles1 = read_and_resample_profiles(profile_path1, prefix_1, interpolation_method, step)
-    profiles2 = read_and_resample_profiles(profile_path2, prefix_2, interpolation_method, step)
-    profiles3 = read_and_resample_profiles(profile_path3, prefix_3, interpolation_method, step)
+    profiles1 = read_and_resample_profiles(
+        profile_path1, prefix_1, interpolation_method, step
+    )
+    profiles2 = read_and_resample_profiles(
+        profile_path2, prefix_2, interpolation_method, step
+    )
+    profiles3 = read_and_resample_profiles(
+        profile_path3, prefix_3, interpolation_method, step
+    )
 
     os.makedirs(output_directory, exist_ok=True)
-    
+
     missing_files = []
-    
+
     for common_part in profiles1:
         if common_part in profiles2 and common_part in profiles3:
             df1_resampled = profiles1[common_part]
@@ -510,10 +535,10 @@ def resample_interpolate_merge_profiles(profile_path1, profile_path2, profile_pa
             df3_resampled = profiles3[common_part]
 
             df_merged = merge_profiles(df1_resampled, df2_resampled, df3_resampled)
-            
+
             if df_merged is not None:
                 # Extract the date from the common part of the filename
-                date_part = common_part.split('-')[0]
+                date_part = common_part.split("-")[0]
 
                 # Create the output directory based on the date
                 date_directory = os.path.join(output_directory, date_part)
@@ -526,7 +551,9 @@ def resample_interpolate_merge_profiles(profile_path1, profile_path2, profile_pa
                 print(f"Failed to merge profiles for {common_part}")
         else:
             missing_files.append(common_part)
-            print(f"Missing corresponding files for {common_part} in one of the directories.")
-    
+            print(
+                f"Missing corresponding files for {common_part} in one of the directories."
+            )
+
     if missing_files:
         print(f"Missing files: {missing_files}")

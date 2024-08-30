@@ -99,15 +99,18 @@ def extract_ERA5_profiles_to_csv(df_times_profiles, ds_era5, output_folder):
 
 def process_and_combine_CARRA_datasets(
     path_multilevel,  # Path to the CARRA_t_profiles.nc file
-    path_t_skin,      # Path to the CARRA_t_skin_.nc file
-    path_t_2m,        # Path to the CARRA_t_2m.nc file
-    lon_min, lon_max, lat_min, lat_max,  # Geographical bounds
-    output_path  # Output file path for the combined dataset
+    path_t_skin,  # Path to the CARRA_t_skin_.nc file
+    path_t_2m,  # Path to the CARRA_t_2m.nc file
+    lon_min,
+    lon_max,
+    lat_min,
+    lat_max,  # Geographical bounds
+    output_path,  # Output file path for the combined dataset
 ):
     """
-    Load multiple datasets, subset by geographical region, align timesteps, 
+    Load multiple datasets, subset by geographical region, align timesteps,
     expand dimensions, combine datasets, and save the combined dataset.
-    
+
     Parameters:
     - path_multilevel (str): Path to the CARRA_t_profiles.nc file.
     - path_t_skin (str): Path to the CARRA_t_skin_.nc file.
@@ -120,35 +123,51 @@ def process_and_combine_CARRA_datasets(
     ds_carra_multilevel = xr.open_dataset(path_multilevel)
     ds_carra_t_skin = xr.open_dataset(path_t_skin)
     ds_carra_t_2m = xr.open_dataset(path_t_2m)
-    
+
     # Adjust longitudes if necessary
     ds_carra_multilevel["longitude"] = xr.where(
-        ds_carra_multilevel["longitude"] > 180, ds_carra_multilevel["longitude"] - 360, ds_carra_multilevel["longitude"]
+        ds_carra_multilevel["longitude"] > 180,
+        ds_carra_multilevel["longitude"] - 360,
+        ds_carra_multilevel["longitude"],
     )
     ds_carra_t_skin["longitude"] = xr.where(
-        ds_carra_t_skin["longitude"] > 180, ds_carra_t_skin["longitude"] - 360, ds_carra_t_skin["longitude"]
+        ds_carra_t_skin["longitude"] > 180,
+        ds_carra_t_skin["longitude"] - 360,
+        ds_carra_t_skin["longitude"],
     )
     ds_carra_t_2m["longitude"] = xr.where(
-        ds_carra_t_2m["longitude"] > 180, ds_carra_t_2m["longitude"] - 360, ds_carra_t_2m["longitude"]
+        ds_carra_t_2m["longitude"] > 180,
+        ds_carra_t_2m["longitude"] - 360,
+        ds_carra_t_2m["longitude"],
     )
 
     # Subset the data based on lat/lon bounds
     ds_carra_multilevel_subset = ds_carra_multilevel.where(
-        (ds_carra_multilevel.latitude >= lat_min) & (ds_carra_multilevel.latitude <= lat_max) & 
-        (ds_carra_multilevel.longitude >= lon_min) & (ds_carra_multilevel.longitude <= lon_max), drop=True
+        (ds_carra_multilevel.latitude >= lat_min)
+        & (ds_carra_multilevel.latitude <= lat_max)
+        & (ds_carra_multilevel.longitude >= lon_min)
+        & (ds_carra_multilevel.longitude <= lon_max),
+        drop=True,
     )
     ds_carra_t_skin_subset = ds_carra_t_skin.where(
-        (ds_carra_t_skin.latitude >= lat_min) & (ds_carra_t_skin.latitude <= lat_max) & 
-        (ds_carra_t_skin.longitude >= lon_min) & (ds_carra_t_skin.longitude <= lon_max), drop=True
+        (ds_carra_t_skin.latitude >= lat_min)
+        & (ds_carra_t_skin.latitude <= lat_max)
+        & (ds_carra_t_skin.longitude >= lon_min)
+        & (ds_carra_t_skin.longitude <= lon_max),
+        drop=True,
     )
     ds_carra_t_2m_subset = ds_carra_t_2m.where(
-        (ds_carra_t_2m.latitude >= lat_min) & (ds_carra_t_2m.latitude <= lat_max) & 
-        (ds_carra_t_2m.longitude >= lon_min) & (ds_carra_t_2m.longitude <= lon_max), drop=True
+        (ds_carra_t_2m.latitude >= lat_min)
+        & (ds_carra_t_2m.latitude <= lat_max)
+        & (ds_carra_t_2m.longitude >= lon_min)
+        & (ds_carra_t_2m.longitude <= lon_max),
+        drop=True,
     )
 
     # Determine common timesteps across datasets
-    common_times = np.intersect1d(ds_carra_multilevel_subset.time.values,
-                                  ds_carra_t_skin_subset.time.values)
+    common_times = np.intersect1d(
+        ds_carra_multilevel_subset.time.values, ds_carra_t_skin_subset.time.values
+    )
     common_times = np.intersect1d(common_times, ds_carra_t_2m_subset.time.values)
 
     # Subset datasets to include only common timesteps
@@ -157,28 +176,31 @@ def process_and_combine_CARRA_datasets(
     ds_carra_t_2m_subset = ds_carra_t_2m_subset.sel(time=common_times)
 
     # Expand dimensions and rename variables if necessary
-    ds_carra_t_skin_expanded = ds_carra_t_skin_subset.expand_dims({'heightAboveGround': [0]})
-    ds_carra_t_2m_expanded = ds_carra_t_2m_subset.expand_dims({'heightAboveGround': [2]})
-    
+    ds_carra_t_skin_expanded = ds_carra_t_skin_subset.expand_dims(
+        {"heightAboveGround": [0]}
+    )
+    ds_carra_t_2m_expanded = ds_carra_t_2m_subset.expand_dims(
+        {"heightAboveGround": [2]}
+    )
+
     # Rename variables to have a consistent name for temperature
-    ds_carra_t_skin_expanded = ds_carra_t_skin_expanded.rename({'skt': 't'})
-    ds_carra_t_2m_expanded = ds_carra_t_2m_expanded.rename({'t2m': 't'})
+    ds_carra_t_skin_expanded = ds_carra_t_skin_expanded.rename({"skt": "t"})
+    ds_carra_t_2m_expanded = ds_carra_t_2m_expanded.rename({"t2m": "t"})
 
     # Combine datasets
     ds_combined = xr.concat(
         [ds_carra_t_skin_expanded, ds_carra_t_2m_expanded, ds_carra_multilevel_subset],
-        dim='heightAboveGround'
+        dim="heightAboveGround",
     )
 
     # Sort by heightAboveGround to maintain order
-    ds_combined = ds_combined.sortby('heightAboveGround')
+    ds_combined = ds_combined.sortby("heightAboveGround")
 
     # Print the combined dataset to verify
     print(ds_combined)
 
     # Save the combined dataset to the specified location
     ds_combined.to_netcdf(output_path)
-
 
 
 def extract_CARRA_profiles_to_csv(df_times_profiles, file_path_carra, output_folder):

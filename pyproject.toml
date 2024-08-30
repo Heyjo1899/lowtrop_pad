@@ -19,6 +19,7 @@ cftime = "^1.6.4"
 netcdf4 = "^1.7.1.post1"
 scipy = "^1.14.0"
 cartopy = "^0.23.0"
+requests = "^2.32.3"
 
 
 [build-system]
