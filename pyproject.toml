@@ -20,6 +20,8 @@ netcdf4 = "^1.7.1.post1"
 scipy = "^1.14.0"
 cartopy = "^0.23.0"
 requests = "^2.32.3"
+scikit-learn = "^1.5.1"
+seaborn = "^0.13.2"
 
 
 [build-system]

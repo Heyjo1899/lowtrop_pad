@@ -6,7 +6,7 @@ from lowtrop_pad.plotting_profiles import (
     plot_merged_and_resampled_profiles,
     plot_mean_differences,
     plot_differences_array,
-    plot_differences_array_resampled
+    plot_differences_array_resampled,
 )
 from lowtrop_pad.plotting_synoptic import plot_era5_synoptic
 
@@ -166,54 +166,55 @@ if False:
             )
 
 # Plotting mean differences of XQ2 and Reanalysis
-if False: 
+if False:
     plot_mean_differences(
-        input_directory=r'results\mean_differences_xq2_reanalysis',
-        output_directory=r'plots\differences_xq2_reanalysis'
+        input_directory=r"results\mean_differences_xq2_reanalysis",
+        output_directory=r"plots\differences_xq2_reanalysis",
     )
 
 # Plotting mean Absolute differences of XQ2 and Reanalysis
 if False:
     plot_mean_differences(
-        input_directory=r'results\mean_absolute_differences_xq2_reanalysis',
-        output_directory=r'plots\differences_xq2_reanalysis'
+        input_directory=r"results\mean_absolute_differences_xq2_reanalysis",
+        output_directory=r"plots\differences_xq2_reanalysis",
     )
 
 # Plotting differnces of xq2 and reanylsis as time array
 if False:
-    input_directory = r'results\differences_xq2_reanalysis_time_arrays'
-    output_directory = r'plots\delta_T_over_time'
+    input_directory = r"results\differences_xq2_reanalysis_time_arrays"
+    output_directory = r"plots\delta_T_over_time"
 
     for file_name in os.listdir(input_directory):
-        if file_name.endswith('.csv'):
+        if file_name.endswith(".csv"):
             file_path = os.path.join(input_directory, file_name)
         plot_differences_array(file_path, output_directory)
 if False:
-    input_directory = r'results\differences_xq2_reanalysis_time_arrays'
-    output_directory = r'plots\delta_T_over_time'
+    input_directory = r"results\differences_xq2_reanalysis_time_arrays"
+    output_directory = r"plots\delta_T_over_time"
 
     for file_name in os.listdir(input_directory):
-        if file_name.endswith('.csv'):
+        if file_name.endswith(".csv"):
             file_path = os.path.join(input_directory, file_name)
         plot_differences_array(file_path, output_directory)
 
 # Plotting differnces of xq2 and reanylsis as time array RESAMPLED
-if True: 
-    input_directory = r'results\differences_xq2_reanalysis_time_arrays_resampled'
-    output_directory = r'plots\delta_T_over_time_resampled'
-    
+if True:
+    input_directory = r"results\differences_xq2_reanalysis_time_arrays_resampled"
+    output_directory = r"plots\delta_T_over_time_resampled"
+
     for file_name in os.listdir(input_directory):
-        if file_name.endswith('.csv'):
+        if file_name.endswith(".csv"):
             file_path = os.path.join(input_directory, file_name)
         plot_differences_array_resampled(file_path, output_directory, upper_ylim=None)
 
 
 if True:
-    input_directory = r'results\absolute_differences_xq2_reanalysis_time_arrays_resampled'
-    output_directory = r'plots\absolute_delta_T_over_time_resampled'
+    input_directory = (
+        r"results\absolute_differences_xq2_reanalysis_time_arrays_resampled"
+    )
+    output_directory = r"plots\absolute_delta_T_over_time_resampled"
 
     for file_name in os.listdir(input_directory):
-        if file_name.endswith('.csv'):
+        if file_name.endswith(".csv"):
             file_path = os.path.join(input_directory, file_name)
         plot_differences_array_resampled(file_path, output_directory, upper_ylim=None)
-    

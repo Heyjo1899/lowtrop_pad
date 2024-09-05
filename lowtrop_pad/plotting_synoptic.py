@@ -62,7 +62,7 @@ def plot_era5_synoptic(
     )
 
     # Plot the temperature data from the first dataset
-    temp_plot = temp_data.plot(
+    temp_data.plot(
         ax=ax,
         transform=ccrs.PlateCarree(),
         cmap="coolwarm",

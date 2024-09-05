@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
 import numpy as np
-import matplotlib.dates as mdates
+
 
 def split_and_concatenate(file):
     # Remove the file ending
@@ -387,174 +387,238 @@ def plot_merged_and_resampled_profiles(
         os.makedirs(output_path)
     plt.savefig(os.path.join(output_path, output_filename))
 
+
 def plot_mean_differences(input_directory, output_directory):
-    '''
+    """
     Loads the mean differences or mean absolute differences from the specified directory,
     creates and stores plots for altitude vs temperature difference.
 
     Parameters:
     input_directory (str): Path to the directory containing the mean differences or mean absolute differences csv files.
     output_directory (str): Path to the output directory to save the plots.
-    '''    
+    """
     # Ensure output directory exists
     os.makedirs(output_directory, exist_ok=True)
 
     # Determine file names based on whether we're dealing with absolute differences or not
     if "absolute" in input_directory:
-        carra_file = os.path.join(input_directory, 'mean_absolute_differences_carra.csv')
-        era5_file = os.path.join(input_directory, 'mean_absolute_differences_era5.csv')
+        carra_file = os.path.join(
+            input_directory, "mean_absolute_differences_carra.csv"
+        )
+        era5_file = os.path.join(input_directory, "mean_absolute_differences_era5.csv")
         plot_title = "Mean Absolute Temperature Differences (°C)"
         plot_filename = "mean_absolute_differences_plot.png"
     else:
-        carra_file = os.path.join(input_directory, 'mean_differences_carra.csv')
-        era5_file = os.path.join(input_directory, 'mean_differences_era5.csv')
+        carra_file = os.path.join(input_directory, "mean_differences_carra.csv")
+        era5_file = os.path.join(input_directory, "mean_differences_era5.csv")
         plot_title = "Mean Temperature Differences (°C)"
         plot_filename = "mean_differences_plot.png"
-    
+
     # Load the data
     carra_df = pd.read_csv(carra_file)
     era5_df = pd.read_csv(era5_file)
 
     # Reduce Data to start with 2m above ground to avoid lacking xq2 data near surface
-    carra_df = carra_df[carra_df['alt_ag'] >= 2]
-    era5_df = era5_df[era5_df['alt_ag'] >= 2]
+    carra_df = carra_df[carra_df["alt_ag"] >= 2]
+    era5_df = era5_df[era5_df["alt_ag"] >= 2]
 
     # Create the plot for Carra
     plt.figure(figsize=(6, 6))
-    plt.plot(carra_df['mean_all_profiles'], carra_df['alt_ag'], label='All Profiles', color='blue')
-    plt.plot(carra_df['mean_tundra'], carra_df['alt_ag'], label='Tundra', color='green')
-    plt.plot(carra_df['mean_water'], carra_df['alt_ag'], label='Water', color='red')
-    plt.plot(carra_df['mean_ice'], carra_df['alt_ag'], label='Ice', color='purple')
-    plt.plot(carra_df['mean_lake'], carra_df['alt_ag'], label='Lake', color='orange')
+    plt.plot(
+        carra_df["mean_all_profiles"],
+        carra_df["alt_ag"],
+        label="All Profiles",
+        color="blue",
+    )
+    plt.plot(carra_df["mean_tundra"], carra_df["alt_ag"], label="Tundra", color="green")
+    plt.plot(carra_df["mean_water"], carra_df["alt_ag"], label="Water", color="red")
+    plt.plot(carra_df["mean_ice"], carra_df["alt_ag"], label="Ice", color="purple")
+    plt.plot(carra_df["mean_lake"], carra_df["alt_ag"], label="Lake", color="orange")
 
     # Plot settings for Carra
-    plt.xlabel('Temperature Difference (°C)')
-    plt.ylabel('Altitude Above Ground (m)')
-    plt.title(f'XQ2-Carra - {plot_title}')
-    plt.legend(loc='best')
+    plt.xlabel("Temperature Difference (°C)")
+    plt.ylabel("Altitude Above Ground (m)")
+    plt.title(f"XQ2-Carra - {plot_title}")
+    plt.legend(loc="best")
     plt.grid(True)
     plt.tight_layout()
-    
+
     # Save the Carra plot
-    plt.savefig(os.path.join(output_directory, f'carra_{plot_filename}'))
+    plt.savefig(os.path.join(output_directory, f"carra_{plot_filename}"))
     plt.close()
-    
+
     # Create the plot for Era5
     plt.figure(figsize=(6, 6))
-    plt.plot(era5_df['mean_all_profiles'], era5_df['alt_ag'], label='All Profiles', color='blue')
-    plt.plot(era5_df['mean_tundra'], era5_df['alt_ag'], label='Tundra', color='green')
-    plt.plot(era5_df['mean_water'], era5_df['alt_ag'], label='Water', color='red')
-    plt.plot(era5_df['mean_ice'], era5_df['alt_ag'], label='Ice', color='purple')
-    plt.plot(era5_df['mean_lake'], era5_df['alt_ag'], label='Lake', color='orange')
+    plt.plot(
+        era5_df["mean_all_profiles"],
+        era5_df["alt_ag"],
+        label="All Profiles",
+        color="blue",
+    )
+    plt.plot(era5_df["mean_tundra"], era5_df["alt_ag"], label="Tundra", color="green")
+    plt.plot(era5_df["mean_water"], era5_df["alt_ag"], label="Water", color="red")
+    plt.plot(era5_df["mean_ice"], era5_df["alt_ag"], label="Ice", color="purple")
+    plt.plot(era5_df["mean_lake"], era5_df["alt_ag"], label="Lake", color="orange")
 
     # Plot settings for Era5
-    plt.xlabel('Temperature Difference (°C)')
-    plt.ylabel('Altitude Above Ground (m)')
-    plt.title(f'XQ2-Era5 - {plot_title}')
-    plt.legend(loc='best')
+    plt.xlabel("Temperature Difference (°C)")
+    plt.ylabel("Altitude Above Ground (m)")
+    plt.title(f"XQ2-Era5 - {plot_title}")
+    plt.legend(loc="best")
     plt.grid(True)
     plt.tight_layout()
 
     # Save the Era5 plot
-    plt.savefig(os.path.join(output_directory, f'era5_{plot_filename}'))
+    plt.savefig(os.path.join(output_directory, f"era5_{plot_filename}"))
     plt.close()
 
 
 def plot_differences_array(file_path, output_dir):
     # Read the CSV file
     df = pd.read_csv(file_path)
-    
+
     # Convert the time columns to datetime
-    df.columns = ['alt_ag'] + [pd.to_datetime(col, infer_datetime_format=True) for col in df.columns[1:]]
-    
+    df.columns = ["alt_ag"] + [
+        pd.to_datetime(col, infer_datetime_format=True) for col in df.columns[1:]
+    ]
+
     # Set the alt_ag as the index (Y-axis)
-    df.set_index('alt_ag', inplace=True)
-    
+    df.set_index("alt_ag", inplace=True)
+
     # Convert the DataFrame to a NumPy array for imshow
     data = df.values
-    
+
     # Find the maximum altitude where data is not NaN
     max_valid_alt_ag = df.index[df.notna().any(axis=1)].max()
-    
+
     # Create a figure and axis for the heatmap
     plt.figure(figsize=(12, 8))
-    
+
     # Plot the heatmap using imshow with flipped Y-axis and fixed color scale
-    cax = plt.imshow(data, aspect='auto', cmap='RdYlBu', interpolation='nearest', origin='lower', vmin=-5, vmax=5)
-    
+    cax = plt.imshow(
+        data,
+        aspect="auto",
+        cmap="RdYlBu",
+        interpolation="nearest",
+        origin="lower",
+        vmin=-5,
+        vmax=5,
+    )
+
     # Set labels and title
     plt.title(os.path.basename(file_path))
-    plt.xlabel('Time')
-    plt.ylabel('Altitude Above Ground (m))')
-    
+    plt.xlabel("Time")
+    plt.ylabel("Altitude Above Ground (m))")
+
     # Set X and Y ticks
     num_cols = len(df.columns) - 1
     num_rows = len(df.index)
-    
+
     # Reduce the number of Y-ticks
     y_ticks = np.arange(0, num_rows, max(1, num_rows // 10))  # Show at most 10 labels
     plt.yticks(ticks=y_ticks, labels=df.index[y_ticks])
-    
+
     # Reduce the number of X-ticks for better readability
-    x_tick_indices = np.arange(0, num_cols, max(1, num_cols // 20))  # Show at most 20 labels
-    plt.xticks(ticks=x_tick_indices, labels=[df.columns[i + 1].strftime('%d.%m.%Y %H:%M') for i in x_tick_indices], rotation=45, ha='right')
-    
+    x_tick_indices = np.arange(
+        0, num_cols, max(1, num_cols // 20)
+    )  # Show at most 20 labels
+    plt.xticks(
+        ticks=x_tick_indices,
+        labels=[df.columns[i + 1].strftime("%d.%m.%Y %H:%M") for i in x_tick_indices],
+        rotation=45,
+        ha="right",
+    )
+
     # Set Y-axis limit to the maximum valid altitude
-    plt.ylim(0, np.where(df.index <= max_valid_alt_ag)[0][-1] + 1)  # Setting limit based on index position
+    plt.ylim(
+        0, np.where(df.index <= max_valid_alt_ag)[0][-1] + 1
+    )  # Setting limit based on index position
 
     # Add a colorbar with the fixed range
-    plt.colorbar(cax, label='Temperature Difference (°C)')
-    
+    plt.colorbar(cax, label="Temperature Difference (°C)")
+
     # Adjust layout to prevent label overlap
     plt.tight_layout()
-    
+
     # Save the plot to the output directory
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    
-    output_file = os.path.join(output_dir, os.path.basename(file_path).replace('.csv', '.png'))
-    plt.savefig(output_file, bbox_inches='tight')
+
+    output_file = os.path.join(
+        output_dir, os.path.basename(file_path).replace(".csv", ".png")
+    )
+    plt.savefig(output_file, bbox_inches="tight")
     plt.close()
+
 
 def plot_differences_array_resampled(file_path, output_dir, upper_ylim=None):
     # Load the data
     df = pd.read_csv(file_path)
-    
+
     # Convert the time columns to datetime
-    df.set_index('alt_ag', inplace=True)
+    df.set_index("alt_ag", inplace=True)
     df.columns = pd.to_datetime(df.columns)
-    
+
     # Find the maximum altitude where data is not NaN
     max_valid_alt_ag = df.index[df.notna().any(axis=1)].max()
-    
+
     # Create a figure and axis for the heatmap
     fig, ax = plt.subplots(figsize=(12, 8))
-    
+
     # Plot the heatmap using imshow with the Y-axis and fixed color scale
-    if file_path.split("\\")[-1].startswith('abs'):
-        cax = ax.imshow(df.values, aspect='auto', cmap='Reds', interpolation='spline16', origin='lower', vmin=0, vmax=6)
-        c_label = 'Absolute Temperature Difference (°C)'
+    if file_path.split("\\")[-1].startswith("abs"):
+        cax = ax.imshow(
+            df.values,
+            aspect="auto",
+            cmap="Reds",
+            interpolation="spline16",
+            origin="lower",
+            vmin=0,
+            vmax=6,
+        )
+        c_label = "Absolute Temperature Difference (°C)"
     else:
-        cax = ax.imshow(df.values, aspect='auto', cmap='RdYlBu', interpolation='spline16', origin='lower', vmin=-5, vmax=5)
-        c_label = 'Temperature Difference (°C)'
+        cax = ax.imshow(
+            df.values,
+            aspect="auto",
+            cmap="RdYlBu",
+            interpolation="spline16",
+            origin="lower",
+            vmin=-5,
+            vmax=5,
+        )
+        c_label = "Temperature Difference (°C)"
     # Add contour lines
     levels = np.linspace(-5, 5, 11)  # Define the levels for contour lines
-    contour = ax.contour(df.values, levels=levels, colors='black', linewidths=0.5, alpha=0.7, extent=[0, df.shape[1], 0, df.shape[0]])
-    
+    ax.contour(
+        df.values,
+        levels=levels,
+        colors="black",
+        linewidths=0.5,
+        alpha=0.7,
+        extent=[0, df.shape[1], 0, df.shape[0]],
+    )
+
     # Set the labels and title
     ax.set_title(os.path.basename(file_path))
-    ax.set_xlabel('Time')
-    ax.set_ylabel('Altitude Above Ground (m)')
-    
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Altitude Above Ground (m)")
+
     # Configure x-ticks
     num_dates = len(df.columns)
-    tick_interval = max(1, num_dates // 14)  # Adjust this divisor to control the number of ticks
+    tick_interval = max(
+        1, num_dates // 14
+    )  # Adjust this divisor to control the number of ticks
 
     # Set x-ticks at appropriate intervals
     ax.set_xticks(np.arange(0, num_dates, tick_interval))
 
     # Set x-tick labels
-    ax.set_xticklabels([t.strftime('%Y-%m-%d') for t in df.columns[::tick_interval]], rotation=45, ha='right')
+    ax.set_xticklabels(
+        [t.strftime("%Y-%m-%d") for t in df.columns[::tick_interval]],
+        rotation=45,
+        ha="right",
+    )
 
     # Set Y-axis limit to the maximum valid altitude
     if upper_ylim is None:
@@ -564,15 +628,17 @@ def plot_differences_array_resampled(file_path, output_dir, upper_ylim=None):
 
     # Add a colorbar with a fixed range
     plt.colorbar(cax, ax=ax, label=c_label)
-    
+
     # Adjust layout to prevent label overlap
     plt.tight_layout()
-    
+
     if upper_ylim is not None:
-        output_dir = os.path.join(f'{output_dir}_{upper_ylim}')
+        output_dir = os.path.join(f"{output_dir}_{upper_ylim}")
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-   
-    output_file_path = os.path.join(output_dir, os.path.basename(file_path).replace('.csv', '.png'))
-    plt.savefig(output_file_path, bbox_inches='tight')
+
+    output_file_path = os.path.join(
+        output_dir, os.path.basename(file_path).replace(".csv", ".png")
+    )
+    plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()
