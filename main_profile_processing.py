@@ -5,6 +5,7 @@ from lowtrop_pad.processing_profiles import (
     extract_profile_times_and_coords,
     save_coordinates_from_profiles,
     resample_interpolate_merge_profiles,
+    calculate_gradients
 )
 from lowtrop_pad.reanalysis_processing import (
     merge_era5_with_height_info,
@@ -20,21 +21,23 @@ if False:
     # Load all profiles in a dictionary and reduce the top values by n
     all_profiles = load_and_reduce_profile_top(by_flight_dir, red_n=3)
 
+if False:
     # Smoothing the profiles by vertical bins, including possiblity of custom near-surface bins
     average_profiles_by_vertical_bins(
         all_profiles,
-        bin_size=20,
+        bin_size=12,
         output_directory="data/xq2/averaged_profiles",
         custom_bins=True,
         bin1=3,
         bin2=5,
-        bin3=10,
+        bin3=10
     )
+
 
 if False:
     print("Starting to process ERA5 data")
     # Loading all processed profiles and extracting the date and time for every ascent
-    xq2_path = "data\\xq2\\averaged_profiles_custom_3_5_10_20"
+    xq2_path = "data\\xq2\\averaged_profiles_custom_3_5_10_12"
     df_times_profiles = extract_profile_times_and_coords(xq2_path)
 
     # Loading Era 5 Data and merging with height above ground information over levels
@@ -74,11 +77,11 @@ if False:
     print("Finished combining CARRA data")
 
 # Extracting CARRA profiles for all xq2 profiles
-if False:
+if True:
     print("Starting to extract CARRA profiles")
 
     # Loading all processed profiles and extracting the date and time for every ascent
-    folder_path_profiles = "data\\xq2\\averaged_profiles_custom_3_5_10_20"
+    folder_path_profiles = "data\\xq2\\averaged_profiles_custom_3_5_10_12"
     df_times_profiles = extract_profile_times_and_coords(folder_path_profiles)
 
     # Compare all dates of xq2 profiles and extract closest CARRA profiles timewise and spatially
@@ -87,12 +90,13 @@ if False:
         df_times_profiles,
         file_path_carra=file_path_CARRA,
         output_folder="data\\reanalysis\\CARRA_extracted_profiles",
+        fixed_coords=True,
     )
     print("Finished extracting CARRA profiles")
 # Save the coordinates of all profiles of a single day in a single file
-if False:
-    date = "20230810"
-    xq2_path = f"data\\xq2\\averaged_profiles_custom_3_5_10_20\\{date}"
+if True:
+    date = "20230802"
+    xq2_path = f"data\\xq2\\averaged_profiles_custom_3_5_10_12\\{date}"
     carra_path = f"data\\reanalysis\\CARRA_extracted_profiles\\{date}"
     era5_path = f"data\\reanalysis\\ERA5_extracted_profiles\\{date}"
 
@@ -103,7 +107,7 @@ if False:
 # Resample and interpolate all profiles to a common vertical grid and merge them into one file
 if True:
     print("Starting to resample profiles")
-    path1 = "data\\xq2\\averaged_profiles_custom_3_5_10_20"
+    path1 = "data\\xq2\\averaged_profiles_custom_3_5_10_12"
     path2 = "data\\reanalysis\\CARRA_extracted_profiles"
     path3 = "data\\reanalysis\\ERA5_extracted_profiles"
 
@@ -116,3 +120,10 @@ if True:
         step=1,
     )
     print("Finished resample profiles")
+
+# Calculate Gradients for the merged interpolated profiles
+if True: 
+    input_dir = 'data\\merged_interpol_profiles'
+    output_dir = 'data\\gradients_merged_interpol_profiles'
+    calculate_gradients(profile_directory = input_dir, output_directory = output_dir)
+

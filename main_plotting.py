@@ -7,6 +7,7 @@ from lowtrop_pad.plotting_profiles import (
     plot_mean_differences,
     plot_differences_array,
     plot_differences_array_resampled,
+    plot_profiles_array_resampled,
 )
 from lowtrop_pad.plotting_synoptic import plot_era5_synoptic
 
@@ -87,7 +88,7 @@ if False:
     )
 
 # Plotting merged and resampled profiles of all days over loop
-if False:
+if True:
     interpol_path = r"data\merged_interpol_profiles"
     output_dir = r"plots\plots_of_day_merged"
 
@@ -166,21 +167,23 @@ if False:
             )
 
 # Plotting mean differences of XQ2 and Reanalysis
-if False:
+if True:
     plot_mean_differences(
         input_directory=r"results\mean_differences_xq2_reanalysis",
         output_directory=r"plots\differences_xq2_reanalysis",
+        add_std=True
     )
 
 # Plotting mean Absolute differences of XQ2 and Reanalysis
-if False:
+if True:
     plot_mean_differences(
         input_directory=r"results\mean_absolute_differences_xq2_reanalysis",
         output_directory=r"plots\differences_xq2_reanalysis",
+        add_std=True
     )
 
-# Plotting differnces of xq2 and reanylsis as time array
-if False:
+# Plotting differnces of xq2 and reanalysis as time array
+if True:
     input_directory = r"results\differences_xq2_reanalysis_time_arrays"
     output_directory = r"plots\delta_T_over_time"
 
@@ -205,7 +208,7 @@ if True:
     for file_name in os.listdir(input_directory):
         if file_name.endswith(".csv"):
             file_path = os.path.join(input_directory, file_name)
-        plot_differences_array_resampled(file_path, output_directory, upper_ylim=None)
+        plot_differences_array_resampled(file_path, output_directory, upper_ylim=480)
 
 
 if True:
@@ -217,4 +220,37 @@ if True:
     for file_name in os.listdir(input_directory):
         if file_name.endswith(".csv"):
             file_path = os.path.join(input_directory, file_name)
-        plot_differences_array_resampled(file_path, output_directory, upper_ylim=None)
+        plot_differences_array_resampled(file_path, output_directory, upper_ylim=480)
+
+# PLotting XQ2 profiles as array over time
+if False: 
+    resampled_dir = r"results\profiles_over_time_resampled"
+    not_resampled_dir = r"results\profiles_over_time"
+    output_dir="plots\profiles_over_time_resampled"
+ # Define the file matching suffixes (all, ice, lake, tundra, water)
+    file_suffixes = ['all_profiles', 'ice_profiles', 'lake_profiles', 'tundra_profiles', 'water_profiles']
+
+    # Loop through the suffixes and process matching files
+    for suffix in file_suffixes:
+        # Construct file paths
+        file_path_resampled = os.path.join(resampled_dir, f"resampled_array_xq2_T_{suffix}.csv")
+        file_path_not_resampled = os.path.join(not_resampled_dir, f"array_xq2_T_{suffix}.csv")
+        plot_profiles_array_resampled(file_path_resampled, file_path_not_resampled, output_dir=output_dir, upper_ylim=480)
+
+# Plotting XQ2 Gradients over time
+if True:
+    # Define directories
+    resampled_dir = r'results\gradients_over_time_resampled'
+    not_resampled_dir = r"results\gradients_over_time"
+    output_dir = r"plots\gradients_over_time_resampled"
+
+    # Define the file matching suffixes (all, ice, lake, tundra, water)
+    file_suffixes = ['all_profiles', 'ice_profiles', 'lake_profiles', 'tundra_profiles', 'water_profiles']
+
+    # Loop through the suffixes and process matching files
+    for suffix in file_suffixes:
+        # Construct file paths
+        file_path_resampled = os.path.join(resampled_dir, f"resampled_array_xq2_T_grad_{suffix}.csv")
+        file_path_not_resampled = os.path.join(not_resampled_dir, f"array_xq2_T_grad_{suffix}.csv")
+
+        plot_profiles_array_resampled(file_path_resampled, file_path_not_resampled, output_dir=output_dir, upper_ylim=480)

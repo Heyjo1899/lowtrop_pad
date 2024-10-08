@@ -18,10 +18,10 @@ c.retrieve(
         "step": "0",
         "stream": "enda",
         "time": "09:00:00/21:00:00",
-        "area": "82/-17/80/-15",
+        "area": "85/-20/78/-10",
         "grid": "1.0/1.0",
         "format": "netcdf",
         "type": "4v",
     },
-    output_directory + "ERA5_profiles.nc",
+    output_directory + "ERA5_profiles_extended_grid.nc",
 )

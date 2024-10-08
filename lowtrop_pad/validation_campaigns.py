@@ -925,11 +925,11 @@ def plot_scatterplots(mast_data_df_path, mode, output_dir='plots//mast_experimen
     plt.close()
 
 
-
 def plot_wind_speed_impact(descents_mast_data_df_path, ascents_mast_data_df_path, output_dir):
     '''
-    Load the mast data DataFrame, calculate the differnce of xq2_t and station_t and of xq2_h and station_h, 
-    then plot the differences against the wind speed at 20m.
+    Load the mast data DataFrame, calculate the difference of xq2_t and station_t and of xq2_h and station_h, 
+    then plot the differences against the wind speed at 20m. Additionally, create scatter plots of ascent vs descent
+    for both xq2_t and xq2_h, colored by altitude levels using matplotlib.
     Parameters:
         descents_mast_data_df_path (str): The path to the CSV file containing the descents mast data DataFrame.
         ascents_mast_data_df_path (str): The path to the CSV file containing the ascents mast data DataFrame.
@@ -940,7 +940,7 @@ def plot_wind_speed_impact(descents_mast_data_df_path, ascents_mast_data_df_path
     # initialize an empty DataFrame to store the differences of ascents and descents
     final_df = pd.DataFrame(columns=['alt_ag', 'time', 'diff_t', 'diff_h', 'wind_speed_20m'])
     
-    # load both datframes
+    # load both dataframes
     final_df_descents = pd.read_csv(descents_mast_data_df_path)
     final_df_descents['time'] = pd.to_datetime(final_df_descents['time'])
     final_df_ascents = pd.read_csv(ascents_mast_data_df_path)
@@ -952,11 +952,14 @@ def plot_wind_speed_impact(descents_mast_data_df_path, ascents_mast_data_df_path
     final_df["diff_h"] = final_df_ascents["xq2_h"] - final_df_descents["xq2_h"]
     final_df["wind_speed_20m"] = final_df_ascents["wind_speed_20m"]
 
-    # plot the differences as scatter plot with unique color for alt_ag levels
+    unique_alt_ag = final_df['alt_ag'].unique()
+    colors = plt.cm.tab10.colors  # Use 10 discrete colors from matplotlib's tab10 colormap
+
+    # Scatter plot of wind speed vs temperature difference
     plt.figure(figsize=(8, 8))
-    for alt_ag in final_df['alt_ag'].unique():
+    for idx, alt_ag in enumerate(unique_alt_ag):
         subset = final_df[final_df['alt_ag'] == alt_ag]
-        plt.scatter(subset['wind_speed_20m'], subset['diff_t'], label=f'{alt_ag}m', s=10)
+        plt.scatter(subset['wind_speed_20m'], subset['diff_t'], color=colors[idx % len(colors)], label=f'{alt_ag}m', s=10)
     plt.title('Wind Speed vs Temperature Difference Ascents - Descents')    
     plt.xlabel('Wind Speed at 20m (m/s)')
     plt.ylabel('Temperature Difference Ascent-Descent (°C)')
@@ -966,10 +969,11 @@ def plot_wind_speed_impact(descents_mast_data_df_path, ascents_mast_data_df_path
     plt.savefig(os.path.join(output_dir, 'wind_speed_vs_temp_diff_modes.png'))
     plt.close()
 
+    # Scatter plot of wind speed vs humidity difference
     plt.figure(figsize=(8, 8))
-    for alt_ag in final_df['alt_ag'].unique():
+    for idx, alt_ag in enumerate(unique_alt_ag):
         subset = final_df[final_df['alt_ag'] == alt_ag]
-        plt.scatter(subset['wind_speed_20m'], subset['diff_h'], label=f'{alt_ag}m', s=10)
+        plt.scatter(subset['wind_speed_20m'], subset['diff_h'], color=colors[idx % len(colors)], label=f'{alt_ag}m', s=10)
     plt.title('Wind Speed vs Humidity Difference Ascents - Descents')
     plt.xlabel('Wind Speed at 20m (m/s)')
     plt.ylabel('Humidity Difference Ascent-Descent (%)')
@@ -979,6 +983,47 @@ def plot_wind_speed_impact(descents_mast_data_df_path, ascents_mast_data_df_path
     plt.savefig(os.path.join(output_dir, 'wind_speed_vs_hum_diff_modes.png'))
     plt.close()
 
+    # Scatter plot of ascent vs descent for xq2_t, colored by altitude
+    plt.figure(figsize=(8, 8))
+    for idx, alt_ag in enumerate(unique_alt_ag):
+        subset = final_df[final_df['alt_ag'] == alt_ag]
+        plt.scatter(final_df_ascents.loc[subset.index, 'xq2_t'], final_df_descents.loc[subset.index, 'xq2_t'], 
+                    color=colors[idx % len(colors)], label=f'{alt_ag}m', marker='x', s=10)
+    plt.title('Ascent vs Descent Temperature (xq2_t)')
+    plt.xlabel('Ascent Temperature (°C)')
+    plt.ylabel('Descent Temperature (°C)')
+    plt.grid(True)
+    plt.legend(title='Altitude above ground', loc='best')
+    plt.tight_layout()
+    # Add red diagonal line without legend entry
+    plt.plot([0, 12], [0, 12], linestyle = '--', color = 'darkgrey')
+    
+    plt.savefig(os.path.join(os.path.dirname(output_dir), 'ascents_vs_descents', 'ascent_vs_descent_temperature.png'))
+    plt.close()
+
+    # Scatter plot of ascent vs descent for xq2_h, colored by altitude
+    plt.figure(figsize=(8, 8))
+    for idx, alt_ag in enumerate(unique_alt_ag):
+        subset = final_df[final_df['alt_ag'] == alt_ag]
+        plt.scatter(final_df_ascents.loc[subset.index, 'xq2_h'], final_df_descents.loc[subset.index, 'xq2_h'], 
+                    color=colors[idx % len(colors)], label=f'{alt_ag}m', marker='x', s=10)
+    plt.title('Ascent vs Descent Humidity (xq2_h)')
+    plt.xlabel('Ascent Humidity (%)')
+    plt.ylabel('Descent Humidity (%)')
+    plt.grid(True)
+    plt.legend(title='Altitude above ground', loc='best')
+    # Add red diagonal line without legend entry
+    plt.plot([50, 105], [50, 105], linestyle = '--', color = 'darkgrey')
+    plt.tight_layout()
+
+    # Ensure the new directory exists
+    os.makedirs(os.path.join(os.path.dirname(output_dir), 'ascents_vs_descents'), exist_ok=True)
+
+    # Save the file in the new directory
+    plt.savefig(os.path.join(os.path.dirname(output_dir), 'ascents_vs_descents', 'ascent_vs_descent_humidity.png'))
+    plt.close()
+
+   
 def uncertainty_thresholds(file_path_ascents, file_path_descents, thresholds_t, thresholds_h, output_dir):
 
     """
@@ -1064,3 +1109,164 @@ def uncertainty_thresholds(file_path_ascents, file_path_descents, thresholds_t, 
     # Save the results as HTML tables
     results_df_t.to_html("data//mast_experiment//results//agreement_abs_diff_t.html", index=False)
     results_df_h.to_html("data//mast_experiment//results//agreement_abs_diff_h.html", index=False)
+
+
+def diff_ascent_descent(ascents_dir, descents_dir, output_dir):
+    """
+    Process ascents and descents CSV files, calculate row-wise differences of 't' and 'h',
+    and plot mean differences with a 2x standard deviation band.
+
+    Parameters:
+        ascents_dir (str): Directory containing ascent CSV files.
+        descents_dir (str): Directory to descent CSV files.
+        output_dir (str): Directory to save the plot outputs.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    print('Start processing...')
+    
+    t_differences = pd.DataFrame()
+    h_differences = pd.DataFrame()
+    
+    # Loop over ascent files
+    for file_name in os.listdir(ascents_dir):
+        if file_name.endswith(".csv"):
+            ascent_file_path = os.path.join(ascents_dir, file_name)
+            
+            # Construct the corresponding descent file name
+            descent_file_name = file_name.replace("ascent", "descent")
+            descent_file_path = os.path.join(descents_dir, descent_file_name)
+            
+            print(f'Processing {file_name}...')
+            
+            # Check if corresponding descent file exists
+            if not os.path.exists(descent_file_path):
+                print(f'Descent file missing for {file_name}')
+                continue
+            
+            ascent_df = pd.read_csv(ascent_file_path)
+            descent_df = pd.read_csv(descent_file_path)
+            
+            # Calculate the differences
+            t_diff = ascent_df['t'] - descent_df['t']
+            h_diff = ascent_df['h'] - descent_df['h']
+
+            if 'alt_ag' not in t_differences.columns:
+                t_differences['alt_ag'] = ascent_df['alt_ag']
+                h_differences['alt_ag'] = ascent_df['alt_ag']
+            
+            # Add to the differences DataFrames
+            t_differences[f't_diff_{file_name}'] = t_diff
+            h_differences[f'h_diff_{file_name}'] = h_diff
+            
+
+    
+    # Check if there is data to process
+    if t_differences.empty or h_differences.empty:
+        print("No valid data to process.")
+        return
+    
+    # Calculate row-wise mean and standard deviation
+    t_differences['mean_t_diff'] = t_differences.iloc[:, 1:].mean(axis=1, skipna=True)
+    t_differences['std_t_diff'] = t_differences.iloc[:, 1:].std(axis=1, skipna=True)
+    h_differences['mean_h_diff'] = h_differences[1:].iloc[:, 1:].mean(axis=1, skipna=True)
+    h_differences['std_h_diff'] = h_differences.iloc[:, 1:].std(axis=1, skipna=True)
+    
+    # Plot mean differences with 2x standard deviation bands
+    plt.figure(figsize=(10, 6))
+    plt.plot(t_differences['mean_t_diff'], t_differences['alt_ag'], label='Mean Temperature Difference (°C)')
+    plt.fill_betweenx(t_differences['alt_ag'], 
+                      t_differences['mean_t_diff'] - 2 * t_differences['std_t_diff'], 
+                      t_differences['mean_t_diff'] + 2 * t_differences['std_t_diff'], 
+                      color='b', alpha=0.2, label='±2 Std Dev')
+    plt.title('Mean Temperature Difference vs Altitude')
+    plt.xlabel('Temperature Difference (°C)')
+    plt.ylabel('Altitude (m)')
+    plt.legend()
+    plt.tight_layout()
+    plt.grid(True)
+    plt.savefig(os.path.join(output_dir, 'mean_temp_diff_vs_altitude.png'))
+    plt.close()
+    
+    plt.figure(figsize=(10, 6))
+    plt.plot(h_differences['mean_h_diff'], h_differences['alt_ag'], label='Mean Humidity Difference (%)')
+    plt.fill_betweenx(h_differences['alt_ag'], 
+                      h_differences['mean_h_diff'] - 2 * h_differences['std_h_diff'], 
+                      h_differences['mean_h_diff'] + 2 * h_differences['std_h_diff'], 
+                      color='g', alpha=0.2, label='±2 Std Dev')
+    plt.title('Mean Humidity Difference vs Altitude')
+    plt.xlabel('Humidity Difference (%)')
+    plt.ylabel('Altitude (m)')
+    plt.legend()
+    plt.tight_layout()
+    plt.grid(True)
+    plt.savefig(os.path.join(output_dir, 'mean_humidity_diff_vs_altitude.png'))
+    
+
+    print("Plots saved to:", output_dir)
+
+
+def find_closest_wind_speed(ascent_time, wind_df):
+    ascent_time = pd.to_datetime(ascent_time)
+    wind_df['time'] = pd.to_datetime(wind_df['time'])
+    closest_wind_row = wind_df.iloc[(wind_df['time'] - ascent_time).abs().argsort()[:1]]
+    return closest_wind_row['wind_speed_20m'].values[0]
+
+def all_diffs_vs_wind_scatter(ascents_dir, descents_dir, wind_file_path, output_dir):
+    os.makedirs(output_dir, exist_ok=True)
+    print('Start processing...')
+    
+    # Create empty DataFrames for differences
+    t_differences = pd.DataFrame(columns=['alt_ag', 't_diff', 'wind_speed'])
+    h_differences = pd.DataFrame(columns=['alt_ag', 'h_diff', 'wind_speed'])
+    
+    # Load wind data
+    winds_df = pd.read_csv(wind_file_path)
+    
+    # Loop over ascent files
+    for file_name in os.listdir(ascents_dir):
+        if file_name.endswith(".csv"):
+            ascent_file_path = os.path.join(ascents_dir, file_name)
+            descent_file_path = os.path.join(descents_dir, file_name.replace("ascent", "descent"))
+            
+            print(f'Processing {file_name}...')
+            
+            if not os.path.exists(descent_file_path):
+                print(f'Descent file missing for {file_name}')
+                continue
+            
+            ascent_df = pd.read_csv(ascent_file_path)
+            descent_df = pd.read_csv(descent_file_path)
+            
+            # Calculate the differences
+            t_diff = ascent_df['t'] - descent_df['t']
+            h_diff = ascent_df['h'] - descent_df['h']
+            
+            # Find the closest wind speed based on ascent time
+            ascent_time = ascent_df['time'].iloc[0]
+            wind_speed = find_closest_wind_speed(ascent_time, winds_df)
+            
+            # Append the differences, altitude, and wind speed to DataFrames
+            t_differences = pd.concat([t_differences, pd.DataFrame({
+                'alt_ag': ascent_df['alt_ag'],
+                't_diff': t_diff,
+                'wind_speed': [wind_speed] * len(t_diff)
+            })])
+            
+            h_differences = pd.concat([h_differences, pd.DataFrame({
+                'alt_ag': ascent_df['alt_ag'],
+                'h_diff': h_diff,
+                'wind_speed': [wind_speed] * len(h_diff)
+            })])
+
+    # Plot temperature difference vs wind speed with altitude as color
+    plt.figure(figsize=(10, 6))
+    scatter = plt.scatter(t_differences['wind_speed'], t_differences['t_diff'], 
+                          c=t_differences['alt_ag'], cmap='Spectral', s=1)
+    plt.colorbar(scatter, label='Altitude above ground (m)')
+    plt.xlabel('Wind Speed (m/s)')
+    plt.ylabel('Temperature Difference Ascent - Descent (°C)')
+    plt.title('Temperature Difference vs Wind Speed')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, 'temp_diff_vs_wind_speed_all_points.png'))
+    

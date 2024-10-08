@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
 import numpy as np
+from matplotlib.patches import Patch
 
 
 def split_and_concatenate(file):
@@ -193,7 +194,7 @@ def plot_xq2_vs_reanalysis_profiles_of_day(
 
     # Set output filename
     if output_filename is None:
-        output_filename = f"{file_ending}_{date}.png"
+        output_filename = f"Temperature_profiles_{date}.png"
 
     # If savefig is True, save the figure to the given path
     os.makedirs(output_path, exist_ok=True)
@@ -388,31 +389,35 @@ def plot_merged_and_resampled_profiles(
     plt.savefig(os.path.join(output_path, output_filename))
 
 
-def plot_mean_differences(input_directory, output_directory):
+def plot_mean_differences(input_directory, output_directory, add_std=True):
     """
-    Loads the mean differences or mean absolute differences from the specified directory,
-    creates and stores plots for altitude vs temperature difference.
-
+    Loads the mean differences or mean absolute differences and their standard deviations from the specified directory,
+    creates and stores plots with shaded regions for ±1 standard deviations for altitude vs temperature difference.
+    
     Parameters:
     input_directory (str): Path to the directory containing the mean differences or mean absolute differences csv files.
     output_directory (str): Path to the output directory to save the plots.
+    add_std (bool): If True, the ±1 standard deviation will be added to the plot as shaded regions.
     """
     # Ensure output directory exists
     os.makedirs(output_directory, exist_ok=True)
 
-    # Determine file names based on whether we're dealing with absolute differences or not
+    # Determine file names and plot title
     if "absolute" in input_directory:
-        carra_file = os.path.join(
-            input_directory, "mean_absolute_differences_carra.csv"
-        )
+        carra_file = os.path.join(input_directory, "mean_absolute_differences_carra.csv")
         era5_file = os.path.join(input_directory, "mean_absolute_differences_era5.csv")
         plot_title = "Mean Absolute Temperature Differences (°C)"
-        plot_filename = "mean_absolute_differences_plot.png"
+        plot_filename = "mean_absolute_differences_plot"
     else:
         carra_file = os.path.join(input_directory, "mean_differences_carra.csv")
         era5_file = os.path.join(input_directory, "mean_differences_era5.csv")
         plot_title = "Mean Temperature Differences (°C)"
-        plot_filename = "mean_differences_plot.png"
+        plot_filename = "mean_differences_plot"
+
+    if add_std:
+        plot_filename += "_with_std.png"
+    else:
+        plot_filename += "_no_std.png"
 
     # Load the data
     carra_df = pd.read_csv(carra_file)
@@ -422,18 +427,48 @@ def plot_mean_differences(input_directory, output_directory):
     carra_df = carra_df[carra_df["alt_ag"] >= 2]
     era5_df = era5_df[era5_df["alt_ag"] >= 2]
 
-    # Create the plot for Carra
+    # Plot for Carra
     plt.figure(figsize=(6, 6))
-    plt.plot(
-        carra_df["mean_all_profiles"],
-        carra_df["alt_ag"],
-        label="All Profiles",
-        color="blue",
-    )
+
+    # Plot mean and optionally shaded ±1 SD region for all profiles
+    plt.plot(carra_df["mean_all_profiles"], carra_df["alt_ag"], label="All Profiles", color="blue")
+    if add_std:
+        plt.fill_betweenx(carra_df["alt_ag"], 
+                          carra_df["mean_all_profiles"] - carra_df["std_all_profiles"], 
+                          carra_df["mean_all_profiles"] + carra_df["std_all_profiles"],
+                          color="blue", alpha=0.2)
+
+    # Plot mean and optionally shaded ±1 SD region for tundra
     plt.plot(carra_df["mean_tundra"], carra_df["alt_ag"], label="Tundra", color="green")
+    if add_std:
+        plt.fill_betweenx(carra_df["alt_ag"], 
+                          carra_df["mean_tundra"] - carra_df["std_tundra"], 
+                          carra_df["mean_tundra"] + carra_df["std_tundra"],
+                          color="green", alpha=0.2)
+
+    # Plot mean and optionally shaded ±1 SD region for water
     plt.plot(carra_df["mean_water"], carra_df["alt_ag"], label="Water", color="red")
+    if add_std:
+        plt.fill_betweenx(carra_df["alt_ag"], 
+                          carra_df["mean_water"] - carra_df["std_water"], 
+                          carra_df["mean_water"] + carra_df["std_water"],
+                          color="red", alpha=0.2)
+
+    # Plot mean and optionally shaded ±1 SD region for ice
     plt.plot(carra_df["mean_ice"], carra_df["alt_ag"], label="Ice", color="purple")
+    if add_std:
+        plt.fill_betweenx(carra_df["alt_ag"], 
+                          carra_df["mean_ice"] - carra_df["std_ice"], 
+                          carra_df["mean_ice"] + carra_df["std_ice"],
+                          color="purple", alpha=0.2)
+
+    # Plot mean and optionally shaded ±1 SD region for lake
     plt.plot(carra_df["mean_lake"], carra_df["alt_ag"], label="Lake", color="orange")
+    if add_std:
+        plt.fill_betweenx(carra_df["alt_ag"], 
+                          carra_df["mean_lake"] - carra_df["std_lake"], 
+                          carra_df["mean_lake"] + carra_df["std_lake"],
+                          color="orange", alpha=0.2)
 
     # Plot settings for Carra
     plt.xlabel("Temperature Difference (°C)")
@@ -447,18 +482,48 @@ def plot_mean_differences(input_directory, output_directory):
     plt.savefig(os.path.join(output_directory, f"carra_{plot_filename}"))
     plt.close()
 
-    # Create the plot for Era5
+    # Plot for Era5
     plt.figure(figsize=(6, 6))
-    plt.plot(
-        era5_df["mean_all_profiles"],
-        era5_df["alt_ag"],
-        label="All Profiles",
-        color="blue",
-    )
+
+    # Plot mean and optionally shaded ±1 SD region for all profiles
+    plt.plot(era5_df["mean_all_profiles"], era5_df["alt_ag"], label="All Profiles", color="blue")
+    if add_std:
+        plt.fill_betweenx(era5_df["alt_ag"], 
+                          era5_df["mean_all_profiles"] - era5_df["std_all_profiles"], 
+                          era5_df["mean_all_profiles"] + era5_df["std_all_profiles"],
+                          color="blue", alpha=0.2)
+
+    # Plot mean and optionally shaded ±1 SD region for tundra
     plt.plot(era5_df["mean_tundra"], era5_df["alt_ag"], label="Tundra", color="green")
+    if add_std:
+        plt.fill_betweenx(era5_df["alt_ag"], 
+                          era5_df["mean_tundra"] - era5_df["std_tundra"], 
+                          era5_df["mean_tundra"] + era5_df["std_tundra"],
+                          color="green", alpha=0.2)
+
+    # Plot mean and optionally shaded ±1 SD region for water
     plt.plot(era5_df["mean_water"], era5_df["alt_ag"], label="Water", color="red")
+    if add_std:
+        plt.fill_betweenx(era5_df["alt_ag"], 
+                          era5_df["mean_water"] - era5_df["std_water"], 
+                          era5_df["mean_water"] + era5_df["std_water"],
+                          color="red", alpha=0.2)
+
+    # Plot mean and optionally shaded ±1 SD region for ice
     plt.plot(era5_df["mean_ice"], era5_df["alt_ag"], label="Ice", color="purple")
+    if add_std:
+        plt.fill_betweenx(era5_df["alt_ag"], 
+                          era5_df["mean_ice"] - era5_df["std_ice"], 
+                          era5_df["mean_ice"] + era5_df["std_ice"],
+                          color="purple", alpha=0.2)
+
+    # Plot mean and optionally shaded ±1 SD region for lake
     plt.plot(era5_df["mean_lake"], era5_df["alt_ag"], label="Lake", color="orange")
+    if add_std:
+        plt.fill_betweenx(era5_df["alt_ag"], 
+                          era5_df["mean_lake"] - era5_df["std_lake"], 
+                          era5_df["mean_lake"] + era5_df["std_lake"],
+                          color="orange", alpha=0.2)
 
     # Plot settings for Era5
     plt.xlabel("Temperature Difference (°C)")
@@ -471,6 +536,7 @@ def plot_mean_differences(input_directory, output_directory):
     # Save the Era5 plot
     plt.savefig(os.path.join(output_directory, f"era5_{plot_filename}"))
     plt.close()
+
 
 
 def plot_differences_array(file_path, output_dir):
@@ -640,5 +706,138 @@ def plot_differences_array_resampled(file_path, output_dir, upper_ylim=None):
     output_file_path = os.path.join(
         output_dir, os.path.basename(file_path).replace(".csv", ".png")
     )
+    print(os.path.basename(file_path))
+    print(f"Saving plot to {output_file_path}")
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()
+
+def plot_profiles_array_resampled(file_path_resampled, file_path_not_resampled, output_dir, upper_ylim=None):
+    # Load the resampled data
+    df_resampled = pd.read_csv(file_path_resampled)
+    df_resampled.set_index("alt_ag", inplace=True)
+    df_resampled.columns = pd.to_datetime(df_resampled.columns)
+
+    # Load the non-resampled data to get the time events
+    df_not_resampled = pd.read_csv(file_path_not_resampled)
+
+    # Cleaning to just have time columns
+    time_columns = df_not_resampled.drop('alt_ag', axis=1).columns
+    
+    # Convert valid time columns to datetime
+    time_events = pd.to_datetime(time_columns, errors='coerce')
+    
+    # Drop any invalid datetime entries
+    #time_events = time_events.dropna()
+
+    # Find the maximum altitude where data is not NaN
+    max_valid_alt_ag = df_resampled.index[df_resampled.notna().any(axis=1)].max()
+
+    # Create the heatmap
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    if 'gradient' in file_path_resampled:
+        cax = ax.imshow(
+            df_resampled.values,
+            aspect="auto",
+            cmap="plasma",
+            interpolation="spline16",
+            origin="lower",
+            vmin = -0.04,
+            vmax = 0.04
+        )
+        c_label = "Temperature Gradient per Meter (°C)"
+
+        # Generate contour levels based on data range
+        levels = np.linspace(df_resampled.min().min(), df_resampled.max().max(), 40)
+
+        # Add contour lines
+        ax.contour(
+            df_resampled.values,
+            levels=levels,
+            colors="black",
+            linewidths=0.5,
+            alpha=0.7,
+            extent=[0, df_resampled.shape[1], 0, df_resampled.shape[0]],
+        )
+    else: 
+        cax = ax.imshow(
+            df_resampled.values,
+            aspect="auto",
+            cmap="RdYlBu_r",
+            interpolation="spline16",
+            origin="lower",
+        )
+        c_label = "Temperature (°C)"
+
+        # Add contour lines
+        ax.contour(
+            df_resampled.values,
+            levels=10,
+            colors="black",
+            linewidths=0.5,
+            alpha=0.7,
+            extent=[0, df_resampled.shape[1], 0, df_resampled.shape[0]],
+        )
+
+    # Set the labels and title
+    ax.set_title(os.path.basename(file_path_resampled))
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Altitude Above Ground (m)")
+
+    # Configure x-ticks
+    num_dates = len(df_resampled.columns)
+    tick_interval = max(1, num_dates // 14)  # Adjust this divisor to control the number of ticks
+    ax.set_xticks(np.arange(0, num_dates, tick_interval))
+    ax.set_xticklabels(
+        [t.strftime("%Y-%m-%d") for t in df_resampled.columns[::tick_interval]],
+        rotation=45,
+        ha="right",
+    )
+
+    # Add vertical grey transparent bands for each valid event time
+    time_start = df_resampled.columns[0]
+    time_end = df_resampled.columns[-1]
+    
+    # Convert time to a numeric scale (e.g., total seconds from the start)
+    total_seconds = (df_resampled.columns - time_start).total_seconds()
+    
+    for event_time in time_events:
+        if time_start <= event_time <= time_end:
+            # Convert the event time to total seconds
+            event_seconds = (event_time - time_start).total_seconds()
+            
+            # Find the closest indices in the resampled time data
+            closest_index = np.searchsorted(total_seconds, event_seconds)
+            
+            # Add a grey band at the corresponding position
+            ax.axvspan(closest_index - 0.04, closest_index + 0.04, color='dimgrey', alpha=1)  # Slight transparency
+
+    # Add a legend for the grey bands
+    grey_band = Patch(color='dimgrey', alpha=1, label='Measured Profile')
+    ax.legend(handles=[grey_band], loc='upper left')
+
+    # Set Y-axis limit to the maximum valid altitude
+    if upper_ylim is None:
+        ax.set_ylim(0, np.where(df_resampled.index <= max_valid_alt_ag)[0][-1] + 1)
+    else:
+        ax.set_ylim(0, upper_ylim)
+
+    # Add colorbar
+    plt.colorbar(cax, ax=ax, label=c_label)
+
+    # Adjust layout to prevent label overlap
+    plt.tight_layout()
+
+    # Create the output directory if it doesn't exist
+    if upper_ylim is not None:
+        output_dir = os.path.join(f"{output_dir}_{upper_ylim}")
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Save the plot
+    output_file_path = os.path.join(
+        output_dir, os.path.basename(file_path_resampled).replace(".csv", ".png")
+    )
+    plt.savefig(output_file_path, bbox_inches="tight")
+    plt.close()
+
