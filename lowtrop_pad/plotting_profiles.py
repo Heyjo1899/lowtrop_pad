@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
 import numpy as np
 from matplotlib.patches import Patch
+import seaborn as sns
 
 
 def split_and_concatenate(file):
@@ -310,7 +311,15 @@ def plot_Asiaq_station_data(data_path, start_date, end_date):
 def plot_merged_and_resampled_profiles(
     file_path, x_varname, y_varname, file_ending, output_path, output_filename
 ):
-    """ """
+    """
+    Plots all profiles of day from the merged and interpolated files.
+    file_path = path to file
+    x_varname = Variable to plot on X-Axis.
+    y_varname = Variable to plot on Y-Axis.
+    file_ending = file ending of files to load.
+    output_path = directory to store the profiles at.
+    output_filename = name of the plot for storing.
+    """
     # Initialize the plot
     fig, ax = plt.subplots(figsize=(12, 8))
 
@@ -389,22 +398,262 @@ def plot_merged_and_resampled_profiles(
     plt.savefig(os.path.join(output_path, output_filename))
 
 
+def plot_mean_differences_matrix(
+    input_directory, output_directory_plots, output_directory_mean_diff
+):
+    """
+    Loads the differences files including the mean difference.
+    Creates 5x5 subplots for each surface and wind direction.
+    Saves mean absolute and mean differences in a csv file.
+    input_directory (str): Path to the directory containing the mean differences csv files.
+    output_directory (str): Path to the output directory to save the plots.
+    """
+
+    # Create a dictionary for surfaces and wind directions
+    wind_directions = ["north", "east", "south", "west", "all"]
+    surfaces = ["tundra", "ice", "water", "lake", "all"]
+    all_min, all_max = None, None  # Initialize at the beginning of the function
+
+    # Initialize figures for "carra" and "era5"
+    for dataset in ["carra", "era5"]:
+        if dataset == "carra":
+            MAD_df_carra = pd.DataFrame()  # initializing df to store MAD
+        if dataset == "era5":
+            MAD_df_era5 = pd.DataFrame()
+        fig, axs = plt.subplots(5, 5, figsize=(20, 20))
+        fig.suptitle(
+            f"Differences for {dataset.upper()}", fontsize=18, fontweight="bold"
+        )
+        fig.supylabel("Altitude above gorund (m)", fontsize=17, fontweight="bold")
+        fig.supxlabel(
+            f"Temperature Difference XQ2-{dataset.upper()} (°C)",
+            fontsize=17,
+            fontweight="bold",
+        )
+
+        # Read all files in the input directory and plot the mean differences
+        for file in os.listdir(input_directory):
+            if file.endswith(".csv") and dataset in file:
+                file_path = os.path.join(input_directory, file)
+                try:
+                    df = pd.read_csv(file_path)
+                except pd.errors.EmptyDataError:
+                    continue
+
+                # Get the surface and wind direction from the file name
+                surface = file.split("_")[2]
+                wind_direction = file.split("_")[-1].split(".")[0]
+
+                # Ensure the surface and wind direction are valid
+                if surface not in surfaces or wind_direction not in wind_directions:
+                    continue  # Skip if invalid surface or wind direction
+
+                # Get the index of the surface and wind direction
+                surface_index = surfaces.index(surface)
+                wind_direction_index = wind_directions.index(wind_direction)
+
+                # Plot the mean differences in the right subplot
+                axs[surface_index, wind_direction_index].plot(
+                    df["mean"], df["alt_ag"], label="MD", linewidth=2.5, color="blue"
+                )
+
+                # Counter for the number of lines plotted
+                line_count = 0
+
+                # Plot all the single differences profiles with transparency
+                for col in df.columns:
+                    if col != "alt_ag" and col != "mean":
+                        axs[surface_index, wind_direction_index].plot(
+                            df[col],
+                            df["alt_ag"],
+                            label=col,
+                            alpha=0.3,
+                            linewidth=0.7,
+                            color="blue",
+                        )
+                        line_count += 1  # Increment line count
+
+                # Draw a transparent band between the maximum and minimum row-wise values
+                axs[surface_index, wind_direction_index].fill_betweenx(
+                    df["alt_ag"],
+                    df.drop(columns=["alt_ag", "mean"]).max(axis=1),
+                    df.drop(columns=["alt_ag", "mean"]).min(axis=1),
+                    alpha=0.2,
+                    color="blue",
+                )
+
+                # Calculate Mean Absolute Deviation (MAD)
+                mean_absolute_deviation = (
+                    df.drop(columns=["alt_ag", "mean"]).abs().mean().mean()
+                )
+                mean_deviation = df.drop(columns=["alt_ag", "mean"]).mean().mean()
+
+                if dataset == "carra":
+                    MAD_df_carra = pd.concat(
+                        [
+                            MAD_df_carra,
+                            pd.DataFrame(
+                                {
+                                    "file": [file.split(".")[0]],
+                                    "surface": [surface],
+                                    "wind_direction": wind_direction,
+                                    "MAD": [mean_absolute_deviation],
+                                    "MD": [mean_deviation],
+                                    "n": [line_count],
+                                }
+                            ),
+                        ],
+                        ignore_index=True,
+                    )
+                if dataset == "era5":
+                    MAD_df_era5 = pd.concat(
+                        [
+                            MAD_df_era5,
+                            pd.DataFrame(
+                                {
+                                    "file": [file.split(".")[0]],
+                                    "surface": [surface],
+                                    "wind_direction": [wind_direction],
+                                    "MAD": [mean_absolute_deviation],
+                                    "MD": [mean_deviation],
+                                    "n": [line_count],
+                                }
+                            ),
+                        ],
+                        ignore_index=True,
+                    )
+                # Create a dictionary for the bounding box properties
+                bbox_props = dict(
+                    boxstyle="round,pad=0.3",
+                    edgecolor="black",
+                    facecolor="lightgray",
+                    alpha=1,
+                )
+
+                # Create a single annotation text
+                annotation_text = (
+                    f"MAD = {mean_absolute_deviation:.2f}\n" f"n = {line_count}"
+                )
+
+                # Annotate with a single box around the combined text
+                axs[surface_index, wind_direction_index].annotate(
+                    annotation_text,
+                    xy=(0.02, 0.88),
+                    xycoords="axes fraction",
+                    fontsize=10,
+                    fontweight="semibold",
+                    ha="left",
+                    bbox=bbox_props,  # Add the bounding box properties here
+                )
+
+                # Set the title of the subplot
+                # axs[surface_index, wind_direction_index].set_title(f"{surface} - {wind_direction}")
+                # Add a grid to the current subplot
+                axs[surface_index, wind_direction_index].grid(True)
+
+                if surface == "all" and wind_direction == "all":
+                    all_min = df.drop(columns=["alt_ag", "mean"]).min().min()
+                    all_max = df.drop(columns=["alt_ag", "mean"]).max().max()
+        # Set consistent x and y limits for all plots
+        if all_min is not None and all_max is not None:
+            for ax in axs.flat:
+                ax.set_xlim(all_min, all_max)
+                ax.set_ylim(0, 500)
+
+        # Add surface labels on the Y axis
+        for i, surface in enumerate(surfaces):
+            if surface == "all":
+                axs[i, 0].set_ylabel("all surfaces", fontsize=15, fontweight="semibold")
+            else:
+                axs[i, 0].set_ylabel(surface, fontsize=15, fontweight="semibold")
+
+        # Add wind direction labels above the top row
+        for j, wind_direction in enumerate(wind_directions):
+            if wind_direction == "all":
+                axs[0, j].set_title("all wind sectors", fontsize=15, fontweight="bold")
+            else:
+                axs[0, j].set_title(wind_direction, fontsize=15, fontweight="bold")
+
+        # Adjust layout to avoid overlap
+        plt.tight_layout(rect=[0.01, 0.0, 1, 0.98])
+        plt.grid(True)
+
+        # create output directory if it does not exist
+        os.makedirs(output_directory_plots, exist_ok=True)
+        os.makedirs(output_directory_mean_diff, exist_ok=True)
+        if "no_air_mass_change_profiles" in input_directory:
+            plt.savefig(
+                os.path.join(
+                    output_directory_plots,
+                    f"No_Air_Mass_Change_matrix_{dataset}_mean_differences.png",
+                ),
+                dpi=300,
+            )
+            # saving MAD values to a csv file
+            if dataset == "carra":
+                MAD_df_carra.to_csv(
+                    os.path.join(
+                        output_directory_mean_diff,
+                        f"MD_MAD_No_Air_Mass_Change_{dataset}.csv",
+                    ),
+                    index=False,
+                )
+            if dataset == "era5":
+                MAD_df_era5.to_csv(
+                    os.path.join(
+                        output_directory_mean_diff,
+                        f"MD_MAD_No_Air_Mass_Change_{dataset}.csv",
+                    ),
+                    index=False,
+                )
+        else:
+            plt.savefig(
+                os.path.join(
+                    output_directory_plots,
+                    f"All_Profiles_matrix_{dataset}_mean_differences.png",
+                ),
+                dpi=300,
+            )
+            # saving MAD values to a csv file
+            if dataset == "carra":
+                MAD_df_carra.to_csv(
+                    os.path.join(
+                        output_directory_mean_diff, f"MD_MAD_all_profiles_{dataset}.csv"
+                    ),
+                    index=False,
+                )
+            if dataset == "era5":
+                MAD_df_era5.to_csv(
+                    os.path.join(
+                        output_directory_mean_diff, f"MD_MAD_all_profiles_{dataset}.csv"
+                    ),
+                    index=False,
+                )
+        plt.close()
+
+
 def plot_mean_differences(input_directory, output_directory, add_std=True):
     """
     Loads the mean differences or mean absolute differences and their standard deviations from the specified directory,
-    creates and stores plots with shaded regions for ±1 standard deviations for altitude vs temperature difference.
-    
+    creates and stores 3 types of plots:
+    1. All profiles (mean_*.csv)
+    2. All surfaces (columns ending with 'all.csv')
+    3. All wind directions (columns starting with 'mean_all')
+
     Parameters:
     input_directory (str): Path to the directory containing the mean differences or mean absolute differences csv files.
     output_directory (str): Path to the output directory to save the plots.
     add_std (bool): If True, the ±1 standard deviation will be added to the plot as shaded regions.
     """
+
     # Ensure output directory exists
     os.makedirs(output_directory, exist_ok=True)
 
     # Determine file names and plot title
     if "absolute" in input_directory:
-        carra_file = os.path.join(input_directory, "mean_absolute_differences_carra.csv")
+        carra_file = os.path.join(
+            input_directory, "mean_absolute_differences_carra.csv"
+        )
         era5_file = os.path.join(input_directory, "mean_absolute_differences_era5.csv")
         plot_title = "Mean Absolute Temperature Differences (°C)"
         plot_filename = "mean_absolute_differences_plot"
@@ -419,124 +668,337 @@ def plot_mean_differences(input_directory, output_directory, add_std=True):
     else:
         plot_filename += "_no_std.png"
 
-    # Load the data
+    # Load data
     carra_df = pd.read_csv(carra_file)
     era5_df = pd.read_csv(era5_file)
 
-    # Reduce Data to start with 2m above ground to avoid lacking xq2 data near surface
+    # Filter data to start from 2m above ground
     carra_df = carra_df[carra_df["alt_ag"] >= 2]
     era5_df = era5_df[era5_df["alt_ag"] >= 2]
 
     # Plot for Carra
     plt.figure(figsize=(6, 6))
 
-    # Plot mean and optionally shaded ±1 SD region for all profiles
-    plt.plot(carra_df["mean_all_profiles"], carra_df["alt_ag"], label="All Profiles", color="blue")
-    if add_std:
-        plt.fill_betweenx(carra_df["alt_ag"], 
-                          carra_df["mean_all_profiles"] - carra_df["std_all_profiles"], 
-                          carra_df["mean_all_profiles"] + carra_df["std_all_profiles"],
-                          color="blue", alpha=0.2)
+    # Plot all profiles (mean_*.csv)
+    for col in carra_df.columns:
+        if col.startswith("mean_") and not col.startswith("std_"):
+            first = col.split("_")[1]
+            second = col.split("_")[2].split(".")[0]
+            final_label = f"{first} {second}"
+            plt.plot(carra_df[col], carra_df["alt_ag"], label=final_label)
+            if add_std:
+                std_col = col.replace("mean_", "std_")
+                if std_col in carra_df.columns:
+                    plt.fill_betweenx(
+                        carra_df["alt_ag"],
+                        carra_df[col] - carra_df[std_col],
+                        carra_df[col] + carra_df[std_col],
+                        alpha=0.2,
+                    )
 
-    # Plot mean and optionally shaded ±1 SD region for tundra
-    plt.plot(carra_df["mean_tundra"], carra_df["alt_ag"], label="Tundra", color="green")
-    if add_std:
-        plt.fill_betweenx(carra_df["alt_ag"], 
-                          carra_df["mean_tundra"] - carra_df["std_tundra"], 
-                          carra_df["mean_tundra"] + carra_df["std_tundra"],
-                          color="green", alpha=0.2)
-
-    # Plot mean and optionally shaded ±1 SD region for water
-    plt.plot(carra_df["mean_water"], carra_df["alt_ag"], label="Water", color="red")
-    if add_std:
-        plt.fill_betweenx(carra_df["alt_ag"], 
-                          carra_df["mean_water"] - carra_df["std_water"], 
-                          carra_df["mean_water"] + carra_df["std_water"],
-                          color="red", alpha=0.2)
-
-    # Plot mean and optionally shaded ±1 SD region for ice
-    plt.plot(carra_df["mean_ice"], carra_df["alt_ag"], label="Ice", color="purple")
-    if add_std:
-        plt.fill_betweenx(carra_df["alt_ag"], 
-                          carra_df["mean_ice"] - carra_df["std_ice"], 
-                          carra_df["mean_ice"] + carra_df["std_ice"],
-                          color="purple", alpha=0.2)
-
-    # Plot mean and optionally shaded ±1 SD region for lake
-    plt.plot(carra_df["mean_lake"], carra_df["alt_ag"], label="Lake", color="orange")
-    if add_std:
-        plt.fill_betweenx(carra_df["alt_ag"], 
-                          carra_df["mean_lake"] - carra_df["std_lake"], 
-                          carra_df["mean_lake"] + carra_df["std_lake"],
-                          color="orange", alpha=0.2)
-
-    # Plot settings for Carra
+    # Plot settings for Carra (all profiles)
     plt.xlabel("Temperature Difference (°C)")
     plt.ylabel("Altitude Above Ground (m)")
-    plt.title(f"XQ2-Carra - {plot_title}")
+    plt.title(f"XQ2-Carra - All Profiles {plot_title}")
     plt.legend(loc="best")
     plt.grid(True)
     plt.tight_layout()
-
-    # Save the Carra plot
-    plt.savefig(os.path.join(output_directory, f"carra_{plot_filename}"))
+    plt.savefig(
+        os.path.join(output_directory, f"carra_{plot_filename}_all_profiles.png")
+    )
     plt.close()
 
     # Plot for Era5
     plt.figure(figsize=(6, 6))
 
-    # Plot mean and optionally shaded ±1 SD region for all profiles
-    plt.plot(era5_df["mean_all_profiles"], era5_df["alt_ag"], label="All Profiles", color="blue")
-    if add_std:
-        plt.fill_betweenx(era5_df["alt_ag"], 
-                          era5_df["mean_all_profiles"] - era5_df["std_all_profiles"], 
-                          era5_df["mean_all_profiles"] + era5_df["std_all_profiles"],
-                          color="blue", alpha=0.2)
+    # Plot all surfaces (columns ending with 'all.csv')
+    for col in carra_df.columns:
+        if col.endswith("_all.csv") and col.startswith("mean"):
+            first = col.split("_")[1]
+            second = col.split("_")[2].split(".")[0]
+            final_label = f"{first} {second}"
+            plt.plot(carra_df[col], carra_df["alt_ag"], label=final_label)
+            if add_std:
+                std_col = col.replace("mean_", "std_")
+                if std_col in carra_df.columns:
+                    plt.fill_betweenx(
+                        carra_df["alt_ag"],
+                        carra_df[col] - carra_df[std_col],
+                        carra_df[col] + carra_df[std_col],
+                        alpha=0.2,
+                    )
 
-    # Plot mean and optionally shaded ±1 SD region for tundra
-    plt.plot(era5_df["mean_tundra"], era5_df["alt_ag"], label="Tundra", color="green")
-    if add_std:
-        plt.fill_betweenx(era5_df["alt_ag"], 
-                          era5_df["mean_tundra"] - era5_df["std_tundra"], 
-                          era5_df["mean_tundra"] + era5_df["std_tundra"],
-                          color="green", alpha=0.2)
-
-    # Plot mean and optionally shaded ±1 SD region for water
-    plt.plot(era5_df["mean_water"], era5_df["alt_ag"], label="Water", color="red")
-    if add_std:
-        plt.fill_betweenx(era5_df["alt_ag"], 
-                          era5_df["mean_water"] - era5_df["std_water"], 
-                          era5_df["mean_water"] + era5_df["std_water"],
-                          color="red", alpha=0.2)
-
-    # Plot mean and optionally shaded ±1 SD region for ice
-    plt.plot(era5_df["mean_ice"], era5_df["alt_ag"], label="Ice", color="purple")
-    if add_std:
-        plt.fill_betweenx(era5_df["alt_ag"], 
-                          era5_df["mean_ice"] - era5_df["std_ice"], 
-                          era5_df["mean_ice"] + era5_df["std_ice"],
-                          color="purple", alpha=0.2)
-
-    # Plot mean and optionally shaded ±1 SD region for lake
-    plt.plot(era5_df["mean_lake"], era5_df["alt_ag"], label="Lake", color="orange")
-    if add_std:
-        plt.fill_betweenx(era5_df["alt_ag"], 
-                          era5_df["mean_lake"] - era5_df["std_lake"], 
-                          era5_df["mean_lake"] + era5_df["std_lake"],
-                          color="orange", alpha=0.2)
-
-    # Plot settings for Era5
+    # Plot settings for Carra (all surfaces)
     plt.xlabel("Temperature Difference (°C)")
     plt.ylabel("Altitude Above Ground (m)")
-    plt.title(f"XQ2-Era5 - {plot_title}")
+    plt.title(f"XQ2-Carra - All Surfaces {plot_title}")
     plt.legend(loc="best")
     plt.grid(True)
     plt.tight_layout()
-
-    # Save the Era5 plot
-    plt.savefig(os.path.join(output_directory, f"era5_{plot_filename}"))
+    plt.savefig(
+        os.path.join(output_directory, f"carra_{plot_filename}_all_surfaces.png")
+    )
     plt.close()
 
+    # Plot for wind directions (columns starting with 'mean_all')
+    plt.figure(figsize=(6, 6))
+
+    for col in carra_df.columns:
+        if col.startswith("mean_all"):
+            first = col.split("_")[1]
+            second = col.split("_")[2].split(".")[0]
+            final_label = f"{first} {second}"
+            plt.plot(carra_df[col], carra_df["alt_ag"], label=final_label)
+            if add_std:
+                std_col = col.replace("mean_", "std_")
+                if std_col in carra_df.columns:
+                    plt.fill_betweenx(
+                        carra_df["alt_ag"],
+                        carra_df[col] - carra_df[std_col],
+                        carra_df[col] + carra_df[std_col],
+                        alpha=0.2,
+                    )
+
+    # Plot settings for Carra (wind directions)
+    plt.xlabel("Temperature Difference (°C)")
+    plt.ylabel("Altitude Above Ground (m)")
+    plt.title(f"XQ2-Carra - Wind Directions {plot_title}")
+    plt.legend(loc="best")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(output_directory, f"carra_{plot_filename}_wind_directions.png")
+    )
+    plt.close()
+
+
+def plot_xq2_reanalysis_correlation_matrix(
+    input_directory, output_directory, variable_to_plot
+):
+    """
+    Generates and saves a correlation matrix heatmap for xq2 vs reanalysis data.
+    This function processes CSV files in the specified input directory, computes the mean correlation
+    coefficient (r) and count (n) for different surfaces and wind direction combinations, and generates a heatmap
+    plot with custom annotations. The heatmap is saved to the specified output directory.
+    Parameters:
+    input_directory (str): Path to the directory containing input CSV files.
+    output_directory (str): Path to the directory where the output heatmap images will be saved.
+    """
+
+    # Define the surfaces and wind directions
+    surfaces = ["tundra", "ice", "water", "lake", "all"]
+    wind_directions = ["north", "east", "south", "west", "all"]
+
+    os.makedirs(output_directory, exist_ok=True)
+
+    # Loop through all files in the input directory
+    for root, dirs, files in os.walk(input_directory):
+        for file in files:
+            if file.endswith(".csv"):  # Process only CSV files
+                file_path = os.path.join(root, file)
+                df = pd.read_csv(file_path)
+
+                # Initialize empty matrix for r values and counts
+                matrix_r = pd.DataFrame(columns=wind_directions, index=surfaces)
+                matrix_n = pd.DataFrame(columns=wind_directions, index=surfaces)
+
+                # Fill the matrices with values from the dataframe
+                for surface in surfaces:
+                    for direction in wind_directions:
+                        if surface == "all" and direction == "all":
+                            # Mean and count for all surfaces and all wind directions
+                            mean_r = df[variable_to_plot].mean()
+                            count = df[variable_to_plot].count()
+                        elif surface == "all":
+                            # Mean and count for all surfaces for a specific wind direction
+                            mean_r = df[df["wind_direction"] == direction][
+                                variable_to_plot
+                            ].mean()
+                            count = df[df["wind_direction"] == direction][
+                                variable_to_plot
+                            ].count()
+                        elif direction == "all":
+                            # Mean and count for a specific surface across all wind directions
+                            mean_r = df[df["surface"] == surface][
+                                variable_to_plot
+                            ].mean()
+                            count = df[df["surface"] == surface][
+                                variable_to_plot
+                            ].count()
+                        else:
+                            # Mean and count for a specific surface and wind direction
+                            filtered_df = df[
+                                (df["surface"] == surface)
+                                & (df["wind_direction"] == direction)
+                            ]
+                            mean_r = (
+                                filtered_df[variable_to_plot].mean()
+                                if not filtered_df.empty
+                                else np.nan
+                            )
+                            count = filtered_df[variable_to_plot].count()
+
+                        # Populate matrices
+                        matrix_r.loc[surface, direction] = mean_r
+                        matrix_n.loc[surface, direction] = count
+                # Create custom annotations (n in the first row, r in the second row)
+                annotations = (
+                    "n = "
+                    + matrix_n.astype(int).astype(str)
+                    + "\n"
+                    + "r = "
+                    + matrix_r.astype("float").round(2).astype("string")
+                )
+
+                # Create a heatmap plot
+                fig, ax = plt.subplots(figsize=(10, 8))
+
+                # Define the heatmap, with a centered colormap and custom annotations
+                sns.heatmap(
+                    matrix_r.astype(float),
+                    annot=annotations,
+                    fmt="",
+                    cmap="coolwarm",
+                    linewidths=0.5,
+                    cbar_kws={"label": variable_to_plot},
+                    ax=ax,
+                    vmin=-1,
+                    vmax=1,
+                    center=0,
+                    annot_kws={"color": "black"},
+                )
+                # Add title and labels
+                title = "Correlation XQ2 " + (
+                    "CARRA" if "carra" in file.lower() else "ERA5"
+                )
+                ax.set_title(title)
+                ax.set_xlabel("Wind Direction")
+                ax.set_ylabel("Surface")
+
+                # Save the heatmap to the output directory
+                if "all_profiles" in input_directory:
+                    output_file = os.path.join(
+                        output_directory,
+                        f"matrix_all_profiles_{title.lower().replace(' ', '_')}.png",
+                    )
+                if "no_air_mass_change" in input_directory:
+                    output_file = os.path.join(
+                        output_directory,
+                        f"matrix_no_air_mass_change_profiles_{title.lower().replace(' ', '_')}.png",
+                    )
+                plt.savefig(output_file, dpi=300, bbox_inches="tight")
+                plt.close()
+
+
+def plot_xq2_reanalysis_differences_matrix(
+    input_directory, output_directory, variable_to_plot
+):
+    """
+    Generates and saves a differences matrix heatmap for xq2 vs reanalysis data.
+    This function processes CSV files in the specified input directory arranges the data in a matrix format,
+    and generates a heatmap plot with custom annotations. The heatmap is saved to the specified output directory.
+
+    Parameters:
+    input_directory (str): Path to the directory containing input CSV files.
+    output_directory (str): Path to the directory where the output heatmap images will be saved.
+    variable_to_plot (str): The variable to plot, e.g., "MAD" or "MD".
+    """
+
+    # Define the surfaces and wind directions
+    surfaces = ["tundra", "ice", "water", "lake", "all"]
+    wind_directions = ["north", "east", "south", "west", "all"]
+
+    os.makedirs(output_directory, exist_ok=True)
+
+    # Loop through all files in the input directory
+    for root, dirs, files in os.walk(input_directory):
+        for file in files:
+            if file.endswith(".csv"):  # Process only CSV files
+                file_path = os.path.join(root, file)
+                df = pd.read_csv(file_path)
+
+                # Initialize empty matrices for MAD, MD, and n values
+                matrix_mad = pd.DataFrame(columns=wind_directions, index=surfaces)
+                matrix_md = pd.DataFrame(columns=wind_directions, index=surfaces)
+                matrix_n = pd.DataFrame(columns=wind_directions, index=surfaces)
+
+                # Fill the matrices with values from the dataframe
+                for surface in surfaces:
+                    for direction in wind_directions:
+                        # Get MAD, MD, and n for a specific surface and wind direction
+                        filtered_df = df[
+                            (df["surface"] == surface)
+                            & (df["wind_direction"] == direction)
+                        ]
+                        mad = (
+                            filtered_df["MAD"].iloc[0]
+                            if not filtered_df.empty
+                            else np.nan
+                        )
+                        md = (
+                            filtered_df["MD"].iloc[0]
+                            if not filtered_df.empty
+                            else np.nan
+                        )
+                        n = (
+                            filtered_df["n"].iloc[0]
+                            if not filtered_df.empty
+                            else np.nan
+                        )
+
+                        # Populate matrices
+                        matrix_mad.loc[surface, direction] = mad
+                        matrix_md.loc[surface, direction] = md
+                        matrix_n.loc[surface, direction] = n
+
+                if variable_to_plot == "MAD":
+                    matrix_to_plot = matrix_mad
+                elif variable_to_plot == "MD":
+                    matrix_to_plot = matrix_md
+                # Create custom annotations (n in the first row, MAD/MD in the second row)
+                annotations = (
+                    "n = "
+                    + matrix_n.astype(str)
+                    + "\n"
+                    + f"{variable_to_plot} = "
+                    + matrix_to_plot.astype(float).round(2).astype(str)
+                    + "\n"
+                )
+                # Create a heatmap plot
+                fig, ax = plt.subplots(figsize=(10, 8))
+
+                sns.heatmap(
+                    matrix_to_plot.astype(float),
+                    annot=annotations,
+                    fmt="",
+                    cmap="viridis",
+                    linewidths=0.5,
+                    cbar_kws={"label": variable_to_plot},
+                    ax=ax,
+                    vmin=0,  # Set minimum value of the color scale
+                    annot_kws={"color": "black"},
+                )
+
+                # Add title and labels
+                title = f"{variable_to_plot} Matrix " + (
+                    "CARRA" if "carra" in file.lower() else "ERA5"
+                )
+                ax.set_title(title)
+                ax.set_xlabel("Wind Direction")
+                ax.set_ylabel("Surface")
+
+                if "all_profiles" in input_directory:
+                    output_file = os.path.join(
+                        output_directory,
+                        f"matrix_all_profiles_{title.lower().replace(' ', '_')}.png",
+                    )
+                if "no_air_mass_change" in input_directory:
+                    output_file = os.path.join(
+                        output_directory,
+                        f"matrix_no_air_mass_change_profiles_{title.lower().replace(' ', '_')}.png",
+                    )
+                plt.savefig(output_file, dpi=300, bbox_inches="tight")
+                plt.close()
 
 
 def plot_differences_array(file_path, output_dir):
@@ -711,7 +1173,10 @@ def plot_differences_array_resampled(file_path, output_dir, upper_ylim=None):
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()
 
-def plot_profiles_array_resampled(file_path_resampled, file_path_not_resampled, output_dir, upper_ylim=None):
+
+def plot_profiles_array_resampled(
+    file_path_resampled, file_path_not_resampled, output_dir, upper_ylim=None
+):
     # Load the resampled data
     df_resampled = pd.read_csv(file_path_resampled)
     df_resampled.set_index("alt_ag", inplace=True)
@@ -721,13 +1186,13 @@ def plot_profiles_array_resampled(file_path_resampled, file_path_not_resampled, 
     df_not_resampled = pd.read_csv(file_path_not_resampled)
 
     # Cleaning to just have time columns
-    time_columns = df_not_resampled.drop('alt_ag', axis=1).columns
-    
+    time_columns = df_not_resampled.drop("alt_ag", axis=1).columns
+
     # Convert valid time columns to datetime
-    time_events = pd.to_datetime(time_columns, errors='coerce')
-    
+    time_events = pd.to_datetime(time_columns, errors="coerce")
+
     # Drop any invalid datetime entries
-    #time_events = time_events.dropna()
+    # time_events = time_events.dropna()
 
     # Find the maximum altitude where data is not NaN
     max_valid_alt_ag = df_resampled.index[df_resampled.notna().any(axis=1)].max()
@@ -735,15 +1200,15 @@ def plot_profiles_array_resampled(file_path_resampled, file_path_not_resampled, 
     # Create the heatmap
     fig, ax = plt.subplots(figsize=(12, 8))
 
-    if 'gradient' in file_path_resampled:
+    if "gradient" in file_path_resampled:
         cax = ax.imshow(
             df_resampled.values,
             aspect="auto",
             cmap="plasma",
             interpolation="spline16",
             origin="lower",
-            vmin = -0.04,
-            vmax = 0.04
+            vmin=-0.04,
+            vmax=0.04,
         )
         c_label = "Temperature Gradient per Meter (°C)"
 
@@ -759,7 +1224,7 @@ def plot_profiles_array_resampled(file_path_resampled, file_path_not_resampled, 
             alpha=0.7,
             extent=[0, df_resampled.shape[1], 0, df_resampled.shape[0]],
         )
-    else: 
+    else:
         cax = ax.imshow(
             df_resampled.values,
             aspect="auto",
@@ -786,7 +1251,9 @@ def plot_profiles_array_resampled(file_path_resampled, file_path_not_resampled, 
 
     # Configure x-ticks
     num_dates = len(df_resampled.columns)
-    tick_interval = max(1, num_dates // 14)  # Adjust this divisor to control the number of ticks
+    tick_interval = max(
+        1, num_dates // 14
+    )  # Adjust this divisor to control the number of ticks
     ax.set_xticks(np.arange(0, num_dates, tick_interval))
     ax.set_xticklabels(
         [t.strftime("%Y-%m-%d") for t in df_resampled.columns[::tick_interval]],
@@ -797,24 +1264,26 @@ def plot_profiles_array_resampled(file_path_resampled, file_path_not_resampled, 
     # Add vertical grey transparent bands for each valid event time
     time_start = df_resampled.columns[0]
     time_end = df_resampled.columns[-1]
-    
+
     # Convert time to a numeric scale (e.g., total seconds from the start)
     total_seconds = (df_resampled.columns - time_start).total_seconds()
-    
+
     for event_time in time_events:
         if time_start <= event_time <= time_end:
             # Convert the event time to total seconds
             event_seconds = (event_time - time_start).total_seconds()
-            
+
             # Find the closest indices in the resampled time data
             closest_index = np.searchsorted(total_seconds, event_seconds)
-            
+
             # Add a grey band at the corresponding position
-            ax.axvspan(closest_index - 0.04, closest_index + 0.04, color='dimgrey', alpha=1)  # Slight transparency
+            ax.axvspan(
+                closest_index - 0.04, closest_index + 0.04, color="dimgrey", alpha=1
+            )  # Slight transparency
 
     # Add a legend for the grey bands
-    grey_band = Patch(color='dimgrey', alpha=1, label='Measured Profile')
-    ax.legend(handles=[grey_band], loc='upper left')
+    grey_band = Patch(color="dimgrey", alpha=1, label="Measured Profile")
+    ax.legend(handles=[grey_band], loc="upper left")
 
     # Set Y-axis limit to the maximum valid altitude
     if upper_ylim is None:
@@ -840,4 +1309,3 @@ def plot_profiles_array_resampled(file_path_resampled, file_path_not_resampled, 
     )
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()
-

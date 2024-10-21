@@ -67,7 +67,7 @@ def average_profiles_by_vertical_bins(
     custom_bins=False,
     bin1=3,
     bin2=5,
-    bin3=10
+    bin3=10,
 ):
     """
     Average profiles by vertical bins and save the results to the specified output directory.
@@ -83,7 +83,7 @@ def average_profiles_by_vertical_bins(
     """
     # Dictionary to store the averaged DataFrames
     xq2_avg = {}
-         
+
     # Walk through all profiles
     for key in profiles:
         # Extract one profile
@@ -501,7 +501,7 @@ def resample_interpolate_merge_profiles(
     prefix_1="xq2",
     prefix_2="carra",
     prefix_3="era5",
-    interpolation_method="pchip", # pchip for gradient calculation better, linear maybe for rest
+    interpolation_method="pchip",  # pchip for gradient calculation better, linear maybe for rest
     step=1,
 ):
     """
@@ -558,11 +558,12 @@ def resample_interpolate_merge_profiles(
     if missing_files:
         print(f"Missing files: {missing_files}")
 
+
 def calculate_gradients(profile_directory, output_directory):
     """
     Calculate gradients per meter altitude of all variables for each profile in the given directory.
     Save the results to the specified output directory.
-    
+
     Parameters:
     profile_directory (str): Path to the directory containing the merged and interpolated profiles.
     output_directory (str): Path to the directory where the gradients will be saved.
@@ -571,10 +572,33 @@ def calculate_gradients(profile_directory, output_directory):
     os.makedirs(output_directory, exist_ok=True)
 
     # Column names to calculate gradients for
-    col_grad = ['xq2_P', 'xq2_T', 'xq2_T_pot', 'xq2_H', 'xq2_HT', 'carra_t', 'carra_T', 'era5_t', 'era5_q', 'era5_T']
+    col_grad = [
+        "xq2_P",
+        "xq2_T",
+        "xq2_T_pot",
+        "xq2_H",
+        "xq2_HT",
+        "carra_t",
+        "carra_T",
+        "era5_t",
+        "era5_q",
+        "era5_T",
+    ]
 
     # Column names to add without gradient calculation
-    col_add = ['alt_ag', 'xq2_lon', 'xq2_lat', 'xq2_alt', 'xq2_time', 'carra_time', 'carra_lat', 'carra_lon', 'era5_time', 'era5_lat', 'era5_lon']
+    col_add = [
+        "alt_ag",
+        "xq2_lon",
+        "xq2_lat",
+        "xq2_alt",
+        "xq2_time",
+        "carra_time",
+        "carra_lat",
+        "carra_lon",
+        "era5_time",
+        "era5_lat",
+        "era5_lon",
+    ]
 
     # Walk through all directories and files
     for root, dirs, files in os.walk(profile_directory):
@@ -595,12 +619,14 @@ def calculate_gradients(profile_directory, output_directory):
                 df_additional = df_profile[col_add].reset_index(drop=True)
 
                 # Combine the gradients with the additional columns
-                df_combined = pd.concat([df_additional, df_gradients.reset_index(drop=True)], axis=1)
+                df_combined = pd.concat(
+                    [df_additional, df_gradients.reset_index(drop=True)], axis=1
+                )
 
                 # Save the results to date outoput directories
                 date_part = root[-8:]
                 date_directory = os.path.join(output_directory, date_part)
                 os.makedirs(date_directory, exist_ok=True)
-                output_file_path = os.path.join(date_directory, f'gradient_{file_name}')
+                output_file_path = os.path.join(date_directory, f"gradient_{file_name}")
 
                 df_combined.to_csv(output_file_path, index=False)

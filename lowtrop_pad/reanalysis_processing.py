@@ -203,7 +203,9 @@ def process_and_combine_CARRA_datasets(
     ds_combined.to_netcdf(output_path)
 
 
-def extract_CARRA_profiles_to_csv(df_times_profiles, file_path_carra, output_folder, fixed_coords=True):
+def extract_CARRA_profiles_to_csv(
+    df_times_profiles, file_path_carra, output_folder, fixed_coords=True
+):
     """
     Extract vertical profiles of temperature from the CARRA dataset for all profiles
     in df_times_profiles based on nearest time and coordinates, and save them as CSV files
@@ -224,16 +226,28 @@ def extract_CARRA_profiles_to_csv(df_times_profiles, file_path_carra, output_fol
 
     if fixed_coords:
         # Define the coordinates for each keyword
-        lat_tundra, lon_tundra =  81.59346447299638783, -16.57929481465396293 
+        lat_tundra, lon_tundra = 81.59346447299638783, -16.57929481465396293
         lat_ice, lon_ice = 81.55784926749311, -15.86558759324902
         lat_water, lon_water = 81.57936778503125, -16.29312124236424
         lat_lake, lon_lake = 81.59346447299638783, -16.57929481465396293
 
         # Replace latitude and longitude values based on file_name
-        df_times_profiles.loc[df_times_profiles['file_name'].str.contains('tundra'), ['latitude', 'longitude']] = [lat_tundra, lon_tundra]
-        df_times_profiles.loc[df_times_profiles['file_name'].str.contains('ice'), ['latitude', 'longitude']] = [lat_ice, lon_ice]
-        df_times_profiles.loc[df_times_profiles['file_name'].str.contains('water'), ['latitude', 'longitude']] = [lat_water, lon_water]
-        df_times_profiles.loc[df_times_profiles['file_name'].str.contains('lake'), ['latitude', 'longitude']] = [lat_lake, lon_lake]
+        df_times_profiles.loc[
+            df_times_profiles["file_name"].str.contains("tundra"),
+            ["latitude", "longitude"],
+        ] = [lat_tundra, lon_tundra]
+        df_times_profiles.loc[
+            df_times_profiles["file_name"].str.contains("ice"),
+            ["latitude", "longitude"],
+        ] = [lat_ice, lon_ice]
+        df_times_profiles.loc[
+            df_times_profiles["file_name"].str.contains("water"),
+            ["latitude", "longitude"],
+        ] = [lat_water, lon_water]
+        df_times_profiles.loc[
+            df_times_profiles["file_name"].str.contains("lake"),
+            ["latitude", "longitude"],
+        ] = [lat_lake, lon_lake]
 
     for index, row in df_times_profiles.iterrows():
         # Find the closest time in ds_carra

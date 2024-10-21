@@ -4,10 +4,13 @@ from lowtrop_pad.plotting_profiles import (
     plot_xq2_vs_reanalysis_profiles_of_day,
     plot_Asiaq_station_data,
     plot_merged_and_resampled_profiles,
+    plot_mean_differences_matrix,
     plot_mean_differences,
     plot_differences_array,
     plot_differences_array_resampled,
     plot_profiles_array_resampled,
+    plot_xq2_reanalysis_correlation_matrix,
+    plot_xq2_reanalysis_differences_matrix,
 )
 from lowtrop_pad.plotting_synoptic import plot_era5_synoptic
 
@@ -88,7 +91,7 @@ if False:
     )
 
 # Plotting merged and resampled profiles of all days over loop
-if True:
+if False:
     interpol_path = r"data\merged_interpol_profiles"
     output_dir = r"plots\plots_of_day_merged"
 
@@ -166,24 +169,75 @@ if False:
                 output_filename=output_filename,
             )
 
-# Plotting mean differences of XQ2 and Reanalysis
-if True:
-    plot_mean_differences(
-        input_directory=r"results\mean_differences_xq2_reanalysis",
-        output_directory=r"plots\differences_xq2_reanalysis",
-        add_std=True
+# Plotting mean differences of XQ2 and Reanalysis in matrix
+if False:
+    plot_mean_differences_matrix(
+        input_directory=r"results\differences_xq2_reanalysis\no_air_mass_change_profiles",
+        output_directory_plots=r"plots\differences_xq2_reanalysis",
+        output_directory_mean_diff=r"results\\mean_combination_differences_xq2_reanalysis\no_air_mass_change_profiles",
     )
 
-# Plotting mean Absolute differences of XQ2 and Reanalysis
-if True:
+    plot_mean_differences_matrix(
+        input_directory=r"results\differences_xq2_reanalysis\all_profiles",
+        output_directory_plots=r"plots\differences_xq2_reanalysis",
+        output_directory_mean_diff=r"results\mean_combination_differences_xq2_reanalysis\all_profiles",
+    )
+
+# Plotting mean Absolute differences of XQ2 and Reanalysis as profiles
+if False:
     plot_mean_differences(
-        input_directory=r"results\mean_absolute_differences_xq2_reanalysis",
+        input_directory=r"results\mean_differences_xq2_reanalysis\no_air_mass_change_profiles",
         output_directory=r"plots\differences_xq2_reanalysis",
-        add_std=True
+        add_std=False,
+    )
+    plot_mean_differences(
+        input_directory=r"results\mean_absolute_differences_xq2_reanalysis\no_air_mass_change_profiles",
+        output_directory=r"plots\differences_xq2_reanalysis",
+        add_std=False,
+    )
+
+# Plotting correlation XQ2 vs Reanalysis Matrix
+if False:
+    plot_xq2_reanalysis_correlation_matrix(
+        input_directory=r"results\correlations_xq2_reanalysis\all_profiles",
+        output_directory=r"plots\correlation_xq2_renalysis",
+        variable_to_plot="r",
+    )
+    plot_xq2_reanalysis_correlation_matrix(
+        input_directory=r"results\correlations_xq2_reanalysis\no_air_mass_change_profiles",
+        output_directory=r"plots\correlation_xq2_renalysis",
+        variable_to_plot="r",
+    )
+
+# Plotting mean Absolute differences in matrix for wind/surface categories
+if True:
+    plot_xq2_reanalysis_differences_matrix(
+        input_directory=r"results\mean_combination_differences_xq2_reanalysis\all_profiles",
+        output_directory=r"plots\differences_xq2_reanalysis",
+        variable_to_plot="MAD",
+    )
+
+    plot_xq2_reanalysis_differences_matrix(
+        input_directory=r"results\mean_combination_differences_xq2_reanalysis\all_profiles",
+        output_directory=r"plots\differences_xq2_reanalysis",
+        variable_to_plot="MAD",
+    )
+# Plotting mean differences in matrix for wind/surface categories
+if True:
+    plot_xq2_reanalysis_differences_matrix(
+        input_directory=r"results\mean_combination_differences_xq2_reanalysis\all_profiles",
+        output_directory=r"plots\differences_xq2_reanalysis",
+        variable_to_plot="MD",
+    )
+
+    plot_xq2_reanalysis_differences_matrix(
+        input_directory=r"results\mean_combination_differences_xq2_reanalysis\all_profiles",
+        output_directory=r"plots\differences_xq2_reanalysis",
+        variable_to_plot="MD",
     )
 
 # Plotting differnces of xq2 and reanalysis as time array
-if True:
+if False:
     input_directory = r"results\differences_xq2_reanalysis_time_arrays"
     output_directory = r"plots\delta_T_over_time"
 
@@ -201,7 +255,7 @@ if False:
         plot_differences_array(file_path, output_directory)
 
 # Plotting differnces of xq2 and reanylsis as time array RESAMPLED
-if True:
+if False:
     input_directory = r"results\differences_xq2_reanalysis_time_arrays_resampled"
     output_directory = r"plots\delta_T_over_time_resampled"
 
@@ -211,7 +265,7 @@ if True:
         plot_differences_array_resampled(file_path, output_directory, upper_ylim=480)
 
 
-if True:
+if False:
     input_directory = (
         r"results\absolute_differences_xq2_reanalysis_time_arrays_resampled"
     )
@@ -223,34 +277,64 @@ if True:
         plot_differences_array_resampled(file_path, output_directory, upper_ylim=480)
 
 # PLotting XQ2 profiles as array over time
-if False: 
+if False:
     resampled_dir = r"results\profiles_over_time_resampled"
     not_resampled_dir = r"results\profiles_over_time"
-    output_dir="plots\profiles_over_time_resampled"
- # Define the file matching suffixes (all, ice, lake, tundra, water)
-    file_suffixes = ['all_profiles', 'ice_profiles', 'lake_profiles', 'tundra_profiles', 'water_profiles']
+    output_dir = r"plots\profiles_over_time_resampled"
+    # Define the file matching suffixes (all, ice, lake, tundra, water)
+    file_suffixes = [
+        "all_profiles",
+        "ice_profiles",
+        "lake_profiles",
+        "tundra_profiles",
+        "water_profiles",
+    ]
 
     # Loop through the suffixes and process matching files
     for suffix in file_suffixes:
         # Construct file paths
-        file_path_resampled = os.path.join(resampled_dir, f"resampled_array_xq2_T_{suffix}.csv")
-        file_path_not_resampled = os.path.join(not_resampled_dir, f"array_xq2_T_{suffix}.csv")
-        plot_profiles_array_resampled(file_path_resampled, file_path_not_resampled, output_dir=output_dir, upper_ylim=480)
+        file_path_resampled = os.path.join(
+            resampled_dir, f"resampled_array_xq2_T_{suffix}.csv"
+        )
+        file_path_not_resampled = os.path.join(
+            not_resampled_dir, f"array_xq2_T_{suffix}.csv"
+        )
+        plot_profiles_array_resampled(
+            file_path_resampled,
+            file_path_not_resampled,
+            output_dir=output_dir,
+            upper_ylim=480,
+        )
 
 # Plotting XQ2 Gradients over time
-if True:
+if False:
     # Define directories
-    resampled_dir = r'results\gradients_over_time_resampled'
+    resampled_dir = r"results\gradients_over_time_resampled"
     not_resampled_dir = r"results\gradients_over_time"
     output_dir = r"plots\gradients_over_time_resampled"
 
     # Define the file matching suffixes (all, ice, lake, tundra, water)
-    file_suffixes = ['all_profiles', 'ice_profiles', 'lake_profiles', 'tundra_profiles', 'water_profiles']
+    file_suffixes = [
+        "all_profiles",
+        "ice_profiles",
+        "lake_profiles",
+        "tundra_profiles",
+        "water_profiles",
+    ]
 
     # Loop through the suffixes and process matching files
     for suffix in file_suffixes:
         # Construct file paths
-        file_path_resampled = os.path.join(resampled_dir, f"resampled_array_xq2_T_grad_{suffix}.csv")
-        file_path_not_resampled = os.path.join(not_resampled_dir, f"array_xq2_T_grad_{suffix}.csv")
+        file_path_resampled = os.path.join(
+            resampled_dir, f"resampled_array_xq2_T_grad_{suffix}.csv"
+        )
+        file_path_not_resampled = os.path.join(
+            not_resampled_dir, f"array_xq2_T_grad_{suffix}.csv"
+        )
 
-        plot_profiles_array_resampled(file_path_resampled, file_path_not_resampled, output_dir=output_dir, upper_ylim=480)
+        plot_profiles_array_resampled(
+            file_path_resampled,
+            file_path_not_resampled,
+            output_dir=output_dir,
+            upper_ylim=480,
+        )
