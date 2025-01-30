@@ -913,7 +913,7 @@ def calculate_mean_correlation_combinations(input_directory, output_directory):
                     )
 
 
-def extract_times_from_merged_profiles(profile_directory):
+def extract_times_from_merged_profiles(profile_directory, output_csv_dir=None):
     """
     Extracts time information from files in the merged_interpol_profiles directory
     and returns a dictionary mapping profile names to times.
@@ -942,6 +942,14 @@ def extract_times_from_merged_profiles(profile_directory):
                     # Take the first non-NaN time value
                     time_value = df["xq2_time"].dropna().iloc[0]
                     time_map[profile_name] = time_value
+    # Optionally save the data as a CSV
+    if output_csv_dir:
+        os.makedirs(output_csv_dir, exist_ok=True)
+
+        # Convert the dictionary to a DataFrame
+        time_df = pd.DataFrame(list(time_map.items()), columns=["Profile", "Time"])
+        # Save as CSV
+        time_df.to_csv(os.path.join(output_csv_dir, "profile_times.csv"), index=False)
 
     return time_map
 

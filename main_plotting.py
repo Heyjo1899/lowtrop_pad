@@ -210,7 +210,7 @@ if False:
     )
 
 # Plotting mean Absolute differences in matrix for wind/surface categories
-if True:
+if False:
     plot_xq2_reanalysis_differences_matrix(
         input_directory=r"results\mean_combination_differences_xq2_reanalysis\all_profiles",
         output_directory=r"plots\differences_xq2_reanalysis",
@@ -223,7 +223,7 @@ if True:
         variable_to_plot="MAD",
     )
 # Plotting mean differences in matrix for wind/surface categories
-if True:
+if False:
     plot_xq2_reanalysis_differences_matrix(
         input_directory=r"results\mean_combination_differences_xq2_reanalysis\all_profiles",
         output_directory=r"plots\differences_xq2_reanalysis",
@@ -309,9 +309,9 @@ if False:
 # Plotting XQ2 Gradients over time
 if False:
     # Define directories
-    resampled_dir = r"results\gradients_over_time_resampled"
-    not_resampled_dir = r"results\gradients_over_time"
-    output_dir = r"plots\gradients_over_time_resampled"
+    resampled_dir = r"results\xq2_gradients_over_time_resampled"
+    not_resampled_dir = r"results\xq2_gradients_over_time"
+    output_dir = r"plots\xq2_gradients_over_time_resampled"
 
     # Define the file matching suffixes (all, ice, lake, tundra, water)
     file_suffixes = [
@@ -330,6 +330,39 @@ if False:
         )
         file_path_not_resampled = os.path.join(
             not_resampled_dir, f"array_xq2_T_grad_{suffix}.csv"
+        )
+
+        plot_profiles_array_resampled(
+            file_path_resampled,
+            file_path_not_resampled,
+            output_dir=output_dir,
+            upper_ylim=480,
+        )
+
+# Plotting CARRA Gradients over time
+if False:
+    # Define directories
+    resampled_dir = r"results\carra_gradients_over_time_resampled"
+    not_resampled_dir = r"results\carra_gradients_over_time"
+    output_dir = r"plots\carra_gradients_over_time_resampled"
+
+    # Define the file matching suffixes (all, ice, lake, tundra, water)
+    file_suffixes = [
+        "all_profiles",
+        "ice_profiles",
+        "lake_profiles",
+        "tundra_profiles",
+        "water_profiles",
+    ]
+
+    # Loop through the suffixes and process matching files
+    for suffix in file_suffixes:
+        # Construct file paths
+        file_path_resampled = os.path.join(
+            resampled_dir, f"resampled_array_carra_T_grad_{suffix}.csv"
+        )
+        file_path_not_resampled = os.path.join(
+            not_resampled_dir, f"array_carra_T_grad_{suffix}.csv"
         )
 
         plot_profiles_array_resampled(

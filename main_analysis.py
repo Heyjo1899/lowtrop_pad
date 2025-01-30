@@ -68,7 +68,7 @@ if False:
     )
 
 # Correlation of XQ2 with Reanalysis
-if True:
+if False:
     # Air mass change profiles
     calculate_and_save_correlations(
         input_directory=r"data\merged_interpol_profiles",
@@ -98,9 +98,10 @@ if True:
 
 
 # Build array over time for single xq2 profiles, then resample and interpolate them
-if False:
+if True:
     profile_time_map = extract_times_from_merged_profiles(
-        profile_directory=r"data\merged_interpol_profiles"
+        profile_directory=r"data\merged_interpol_profiles",
+        output_csv_dir="results/uav_time_map",
     )
 
     single_profiles_to_array(
@@ -117,7 +118,7 @@ if False:
         interpolation_method="linear",
     )
 
-# Build array over time for single GRADIENT profiles, then resample and interpolate them
+# Build array over time for XQ2 GRADIENT profiles, then resample and interpolate them
 if False:
     profile_time_map = extract_times_from_merged_profiles(
         profile_directory=r"data\gradients_merged_interpol_profiles"
@@ -127,12 +128,32 @@ if False:
         profile_time_map=profile_time_map,
         input_directory=r"data\gradients_merged_interpol_profiles",
         variable="xq2_T_grad",
-        output_directory="results/gradients_over_time",
+        output_directory="results/xq2_gradients_over_time",
     )
 
     resample_and_interpolate_time_arrays(
-        input_directory="results/gradients_over_time",
-        output_directory="results/gradients_over_time_resampled",
+        input_directory="results/xq2_gradients_over_time",
+        output_directory="results/xq2_gradients_over_time_resampled",
+        resample_interval="1h",
+        interpolation_method="linear",
+    )
+
+# Build array over time for CARRA GRADIENT profiles, then resample and interpolate them
+if True:
+    profile_time_map = extract_times_from_merged_profiles(
+        profile_directory=r"data\gradients_merged_interpol_profiles"
+    )
+
+    single_profiles_to_array(
+        profile_time_map=profile_time_map,
+        input_directory=r"data\gradients_merged_interpol_profiles",
+        variable="carra_t_grad",
+        output_directory="results/carra_gradients_over_time",
+    )
+
+    resample_and_interpolate_time_arrays(
+        input_directory="results/carra_gradients_over_time",
+        output_directory="results/carra_gradients_over_time_resampled",
         resample_interval="1h",
         interpolation_method="linear",
     )
