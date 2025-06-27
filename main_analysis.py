@@ -10,6 +10,7 @@ from lowtrop_pad.profile_analysis import (
     categorize_by_wind_direction,
     calculate_and_save_correlations,
     calculate_mean_correlation_combinations,
+    eastern_profile_wind_directions,
 )
 
 
@@ -98,7 +99,7 @@ if False:
 
 
 # Build array over time for single xq2 profiles, then resample and interpolate them
-if True:
+if False:
     profile_time_map = extract_times_from_merged_profiles(
         profile_directory=r"data\merged_interpol_profiles",
         output_csv_dir="results/uav_time_map",
@@ -139,7 +140,7 @@ if False:
     )
 
 # Build array over time for CARRA GRADIENT profiles, then resample and interpolate them
-if True:
+if False:
     profile_time_map = extract_times_from_merged_profiles(
         profile_directory=r"data\gradients_merged_interpol_profiles"
     )
@@ -190,3 +191,14 @@ if False:
         resample_interval="1h",
         interpolation_method="linear",
     )
+if True:
+    result = eastern_profile_wind_directions(
+        carra_path=r"G:\LOWTROP_VRS\data\reanalysis\wind_east_carra.nc",
+        profile_times_path=r"results\uav_time_map\profile_times.csv",
+        specific_profiles_path=r"results\conditional_profiles\east_wind_files.txt",
+    )
+
+    print(
+        "Wind direction sector counts for Eastern Wind Direction Profiles compared with CARRA"
+    )
+    print(result)

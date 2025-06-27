@@ -11,6 +11,7 @@ from lowtrop_pad.plotting_profiles import (
     plot_profiles_array_resampled,
     plot_xq2_reanalysis_correlation_matrix,
     plot_xq2_reanalysis_differences_matrix,
+    plot_validation_and_mean_profiles,
 )
 from lowtrop_pad.plotting_synoptic import plot_era5_synoptic
 
@@ -371,3 +372,21 @@ if False:
             output_dir=output_dir,
             upper_ylim=480,
         )
+
+# Optimize second Figure and implement to combined figure
+# Swap left and right figure in the end
+if True:
+    # Define your directories and categories.
+    input_directory_diff = r"results/differences_xq2_reanalysis/all_profiles"
+    input_directory_corr = r"results/correlations_xq2_reanalysis/all_profiles"
+    output_directory = r"plots/publication_plots"
+
+    # Create the combined figure.
+    plot_validation_and_mean_profiles(
+        input_directory_diff,
+        input_directory_corr,
+        output_directory,
+        variable_to_plot="r",
+    )
+
+    # Einheit rechts, Heading zentrieren, Box legend links vergrößern, colors profile difference?

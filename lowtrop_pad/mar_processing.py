@@ -100,14 +100,18 @@ def convert_smb(input_file, output_dir):
     """
     ds = xr.open_dataset(input_file)
     ds = ds.sel(SECTOR=1)
+    # mask, then sum, then divide by sum of mask ro get mean over ice cap
     smb = ds["SMB"]
     msk = ds["MSK"] / 100  # mask initially in percent
-
+    t = ds["TTZ"].sel(ZTQLEV=2.0)
     # Apply the mask and sum SMB over the spatial domain for each day
+
     masked_smb = smb * msk
-    specific_mass_balance = masked_smb.mean(
-        dim=["x", "y"]
-    )  # Mean  over the spatial dimensions
+    masked_t = t * msk
+
+    # Calculate the specific mass balance by summing SMB in mm over the spatial domain and dividing by sum of mask
+    specific_mass_balance = masked_smb.sum(dim=["x", "y"]) / msk.sum(dim=["x", "y"])
+    t_mean = masked_t.sum(dim=["x", "y"]) / msk.sum(dim=["x", "y"])
 
     # Calculate the area per grid cell (10 km x 10 km)
     area_per_cell = 10 * 10  # km^2
@@ -118,25 +122,36 @@ def convert_smb(input_file, output_dir):
     # total smb in m^3 > convert specific mb from mm to m and area from km^2 to m^2
     total_smb_daily = (specific_mass_balance / 1000) * (area_total * 1000000)
 
-    # Select the time range for the climatology period (1991-2020)
+    # Select the time range for the climatology period (1991-2020) for smb and temperature
     climatology_period = specific_mass_balance.sel(
         TIME=slice("1991-01-01", "2020-12-31")
     )
+    climatology_period_t = t_mean.sel(TIME=slice("1991-01-01", "2020-12-31"))
 
     # Extract the day of the year (DOY) from the TIME dimension
     climatology_period["dayofyear"] = climatology_period["TIME"].dt.dayofyear
+    climatology_period_t["dayofyear"] = climatology_period_t["TIME"].dt.dayofyear
 
     # Group by day of the year and calculate the mean for each day of the year across all years
     climatology = climatology_period.groupby("dayofyear").mean(dim="TIME")
+    climatology_t = climatology_period_t.groupby("dayofyear").mean(dim="TIME")
 
-    # Step 5: Smooth the climatology using LOESS filtering (frac = 0.18)
+    # Step 5: Smooth the climatology using LOESS filtering
     climatology_smooth = lowess(
         climatology.values, climatology.dayofyear.values, frac=0.045
+    )
+
+    climatology_t_smooth = lowess(
+        climatology_t.values, climatology_t.dayofyear.values, frac=0.045
     )
 
     # Convert smoothed climatology back to a pandas Series for easier manipulation
     climatology_smooth = pd.Series(
         climatology_smooth[:, 1], index=climatology["dayofyear"].values
+    )
+
+    climatology_t_smooth = pd.Series(
+        climatology_t_smooth[:, 1], index=climatology_t["dayofyear"].values
     )
 
     # Calculate the daily SMB anomaly by subtracting the climatology from the daily SMB values
@@ -146,6 +161,10 @@ def convert_smb(input_file, output_dir):
             specific_mass_balance["TIME"].dt.dayofyear.values
         ).values
     )
+    daily_t_anomaly = (
+        t_mean.values
+        - climatology_t_smooth.reindex(t_mean["TIME"].dt.dayofyear.values).values
+    )
 
     # Prepare the DataFrame for the CSV file
     df = pd.DataFrame(
@@ -154,6 +173,8 @@ def convert_smb(input_file, output_dir):
             "SMB (m^3)": total_smb_daily.values,
             "Specific Mass Balance (mm WE)": specific_mass_balance.values,
             "SMB Anomaly (mm WE)": daily_smb_anomaly,
+            "T2m": t_mean,
+            "T2m_anom": daily_t_anomaly,
         }
     )
 
@@ -164,7 +185,7 @@ def convert_smb(input_file, output_dir):
     os.makedirs(output_dir, exist_ok=True)
     output_file = os.path.join(output_dir, "FI_mar_smb.csv")
     df.to_csv(output_file, index=False)
-    print(df)
+
     print(f"CSV file saved to: {output_file}")
 
 
@@ -241,29 +262,61 @@ def mar_to_elev_bins(file_path_mar, output_dir, summer=True):
         )  # Extract temperature for the current time step
         print(time)
 
+        # Define the weight using the MSK variable (assuming it's in percent)
+        weight = subset["MSK"] / 100
+
         for elev_bin in elevation_labels:
             mask = subset["elev_bin"] == elev_bin
 
-            # Calculate means for each variable over x and y
-            smb_mean = subset["SMB"].where(mask).mean(dim=("y", "x")).item()
-            shsn2_mean = subset["SHSN2"].where(mask).mean(dim=("y", "x")).item()
-            ttz_mean = ttz_2m_time.where(mask).mean(dim=("y", "x")).item()
-            mean_elevation = subset["SH"].where(mask).mean(dim=("y", "x")).item()
+            # Calculate the total weight for the current bin
+            total_weight = weight.where(mask).sum(dim=("y", "x"))
 
-            # Count data points and calculate total area
-            data_point_count = mask.sum(dim=("y", "x")).item()
-            total_area_km2 = data_point_count * cell_area_km2
+            # Weighted SMB mean
+            weighted_sum_smb = (subset["SMB"] * weight).where(mask).sum(dim=("y", "x"))
+            smb_weighted_mean = (
+                (weighted_sum_smb / total_weight).item()
+                if total_weight != 0
+                else np.nan
+            )
+
+            # Weighted SHSN2 mean
+            weighted_sum_shsn2 = (
+                (subset["SHSN2"] * weight).where(mask).sum(dim=("y", "x"))
+            )
+            shsn2_weighted_mean = (
+                (weighted_sum_shsn2 / total_weight).item()
+                if total_weight != 0
+                else np.nan
+            )
+
+            # Weighted TTZ (temperature) mean for 2m temperature
+            weighted_sum_ttz = (ttz_2m_time * weight).where(mask).sum(dim=("y", "x"))
+            ttz_weighted_mean = (
+                (weighted_sum_ttz / total_weight).item()
+                if total_weight != 0
+                else np.nan
+            )
+
+            # Weighted mean elevation (SH)
+            weighted_sum_sh = (subset["SH"] * weight).where(mask).sum(dim=("y", "x"))
+            mean_elevation_weighted = (
+                (weighted_sum_sh / total_weight).item() if total_weight != 0 else np.nan
+            )
+
+            # Calculate total area for the current bin
+            weighted_cell_fraction = weight.where(mask).sum(dim=("y", "x")).item()
+            total_area_km2 = weighted_cell_fraction * cell_area_km2
 
             # Append data for the current time and elevation bin
             data.append(
                 [
                     pd.Timestamp(time).strftime("%Y-%m-%d"),
                     elev_bin,
-                    smb_mean,
-                    shsn2_mean,
-                    ttz_mean,
-                    mean_elevation,
-                    data_point_count,
+                    smb_weighted_mean,
+                    shsn2_weighted_mean,
+                    ttz_weighted_mean,
+                    mean_elevation_weighted,
+                    weighted_cell_fraction,
                     total_area_km2,
                 ]
             )
@@ -272,7 +325,7 @@ def mar_to_elev_bins(file_path_mar, output_dir, summer=True):
     columns = [
         "Time",
         "elev_bin",
-        "SMB",
+        "SMB",  # Mean SMB (Specific) in mm we over that part of the glacier
         "Snow_above_ice",
         "Temp",
         "Mean_Elevation",
@@ -286,9 +339,138 @@ def mar_to_elev_bins(file_path_mar, output_dir, summer=True):
     if summer:
         file_name = "mar_1991_2024_elev_bins_summer.csv"
     else:
-        file_name = "mar_1991_2024_elev_bins_test.csv"
+        file_name = "mar_1991_2024_elev_10_bins.csv"
     output_file = os.path.join(output_dir, file_name)
     df.to_csv(output_file, index=False)
 
     # Display a sample of the results
     print(df.head())
+
+
+def summarize_ela_AAR(input_file, output_dir):
+    """
+    Load MAR SMB data from a CSV file, compute the equilibrium line altitude (ELA)
+    for three time periods (using zero-crossing of SMB) and the fractional
+    Accumulation Area Ratio (AAR) based on 100 m elevation bins. The result is exported as a CSV.
+
+    Parameters:
+      input_file (str): Path to the input CSV file containing columns:
+                        Time, SMB, Total_Area_km2, Mean_Elevation, elev_bin, etc.
+      output_csv (str): Path to the output CSV file to save the summary.
+    """
+    # ---------------------- Load and Preprocess Data ----------------------
+    df = pd.read_csv(input_file)
+
+    # Convert 'Time' to datetime and extract Year
+    df["Time"] = pd.to_datetime(df["Time"])
+    df["Year"] = df["Time"].dt.year.astype(int)
+
+    # Compute absolute SMB contribution (in mm·km²)
+    df["SMB_abs_mm_km2"] = df["SMB"] * df["Total_Area_km2"]
+
+    # Group by Year and elevation bin
+    df_grouped = (
+        df.groupby(["Year", "elev_bin"])
+        .agg(
+            SMB_abs=("SMB_abs_mm_km2", "sum"),  # Sum SMB contributions in that bin
+            Total_Area_km2=("Total_Area_km2", "mean"),  # Mean area per elev_bin
+            Mean_Elevation=("Mean_Elevation", "mean"),  # Mean elevation of the bin
+        )
+        .reset_index()
+    )
+
+    # Define bin edges and representative labels for the three time periods
+    bins = [1990, 2002, 2013, 2024]  # right-inclusive edges
+    labels = [1991, 2003, 2014]  # representative year labels
+
+    # Create "Year_Bin" column by binning the "Year" column in df_grouped
+    df_grouped["Year_Bin"] = pd.cut(
+        df_grouped["Year"], bins=bins, labels=labels, right=True
+    )
+    df_grouped["Year_Bin"] = df_grouped["Year_Bin"].astype(int)
+    # Group again by Year_Bin and elev_bin to get mean values (if there are multiple records per bin)
+    df_bin_means = df_grouped.groupby(["Year_Bin", "elev_bin"]).mean().reset_index()
+    # Convert aggregated SMB_abs from mm·km² to Gigatonnes (Gt)
+    df_bin_means["SMB_abs_Gt"] = df_bin_means["SMB_abs"] * 1e-6
+
+    def find_smb_zero_crossing_bin(df):
+        """
+        For each time period (Year_Bin), determine the equilibrium line altitude (ELA)
+        where SMB (in Gt) crosses zero between adjacent elevation bins.
+        If no crossing is found, defaults to 925 m.
+        """
+        zero_crossings = []
+        for period, group in df.groupby("Year_Bin"):
+            group = group.sort_values("Mean_Elevation")
+            smb_values = group[["Mean_Elevation", "SMB_abs_Gt"]].values
+            crossings = []
+            for i in range(len(smb_values) - 1):
+                # If sign change occurs between adjacent bins
+                if smb_values[i, 1] * smb_values[i + 1, 1] < 0:
+                    x1, y1 = smb_values[i]
+                    x2, y2 = smb_values[i + 1]
+                    # Linear interpolation to estimate the crossing elevation:
+                    elev_crossing = x1 + (x2 - x1) * (0 - y1) / (y2 - y1)
+                    crossings.append(elev_crossing)
+            abs_SMB = group["SMB_abs_Gt"].sum()
+            if crossings:
+                zero_crossings.append(
+                    {"Year_Bin": period, "ELA": min(crossings), "SMB": abs_SMB}
+                )
+            else:
+                # Print a warning if no crossing is found and default to 925 m
+                print(
+                    f"Attention: No ela found for time period {period}. Using default ELA=925 m."
+                )
+                zero_crossings.append({"Year_Bin": period, "ELA": 925, "SMB": abs_SMB})
+        return pd.DataFrame(zero_crossings)
+
+    ela_time_periods = find_smb_zero_crossing_bin(df_bin_means)
+
+    # Create a table with unique elevation bin info (assuming each bin spans 100 m)
+    df_unique = df_grouped[
+        ["elev_bin", "Mean_Elevation", "Total_Area_km2"]
+    ].drop_duplicates()
+
+    def compute_AAR_for_ela(ELA, df_unique):
+        """
+        Given an equilibrium line altitude (ELA) and a DataFrame with unique elevation bin info,
+        compute the accumulation and ablation areas assuming each bin spans 100 m and area is uniformly distributed.
+        Returns (accum_area, ablation_area).
+        """
+        accum_area = 0.0
+        ablation_area = 0.0
+        for _, row in df_unique.iterrows():
+            elev_bin = row["elev_bin"]
+            area = row["Total_Area_km2"]
+            lower_bound = elev_bin * 100.0
+            upper_bound = (elev_bin + 1) * 100.0
+            if ELA <= lower_bound:
+                accum_fraction = 1.0
+                ablation_fraction = 0.0
+            elif ELA >= upper_bound:
+                accum_fraction = 0.0
+                ablation_fraction = 1.0
+            else:
+                # ELA falls within this bin: split fractionally
+                accum_fraction = (upper_bound - ELA) / 100.0
+                ablation_fraction = (ELA - lower_bound) / 100.0
+            accum_area += accum_fraction * area
+            ablation_area += ablation_fraction * area
+        return accum_area, ablation_area
+
+    AAR_list = []
+    for idx, row in ela_time_periods.iterrows():
+        ELA = row["ELA"]
+        accum_area, ablation_area = compute_AAR_for_ela(ELA, df_unique)
+        total_area = accum_area + ablation_area
+        AAR = accum_area / total_area if total_area > 0 else np.nan
+        AAR_list.append(AAR)
+
+    ela_time_periods["AAR"] = AAR_list
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_csv = os.path.join(output_dir, "aar_ela_summary.csv")
+    ela_time_periods.to_csv(output_csv, index=False)
+    print(f"AAR Summary exported to: {output_csv}")
+    return ela_time_periods

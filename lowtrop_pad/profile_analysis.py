@@ -3,6 +3,8 @@ import os
 import numpy as np
 from scipy.stats import kendalltau
 import itertools
+import xarray as xr
+from datetime import timedelta
 
 
 def calculate_and_save_differences(
@@ -1287,19 +1289,32 @@ def categorize_by_wind_direction(
                     )
                     continue
 
-                # Calculate the mean wind direction within the time window
-                mean_wind_direction = met_data["VD(degrees 9m)"].mean()
+                # Categorize each wind direction entry into the four directions
+                def categorize_wind(wd):
+                    if (315 <= wd <= 360) or (0 <= wd <= 45):
+                        return "north"
+                    elif 45 < wd <= 135:
+                        return "east"
+                    elif 135 < wd <= 225:
+                        return "south"
+                    else:  # 225 < wd <= 315
+                        return "west"
 
-                # Categorize the mean wind direction into one of the four cardinal directions
-                if (315 <= mean_wind_direction <= 360) or (
-                    0 <= mean_wind_direction <= 45
-                ):
+                # Apply categorization and count
+                wind_categories = met_data["VD(degrees 9m)"].apply(categorize_wind)
+                direction_counts = wind_categories.value_counts()
+                print(direction_counts)
+                # Get the dominant direction (most frequent category)
+                dominant_direction = direction_counts.idxmax()
+
+                # Assign file to the corresponding list
+                if dominant_direction == "north":
                     north_files.append(file)
-                elif 45 < mean_wind_direction <= 135:
+                elif dominant_direction == "east":
                     east_files.append(file)
-                elif 135 < mean_wind_direction <= 225:
+                elif dominant_direction == "south":
                     south_files.append(file)
-                elif 225 < mean_wind_direction <= 315:
+                elif dominant_direction == "west":
                     west_files.append(file)
 
     # Save the lists of files based on wind direction
@@ -1323,3 +1338,88 @@ def categorize_by_wind_direction(
     with open(west_file_path, "w") as f:
         for file in west_files:
             f.write(f"{file}\n")
+    print("saved to ", west_file_path)
+
+
+def eastern_profile_wind_directions(
+    carra_path: str,
+    profile_times_path: str,
+    specific_profiles_path: str,
+    lat: float = 81.59346447299638783,
+    lon: float = -16.57929481465396293,
+    time_window_hours: float = 1.5,
+) -> dict:
+    """
+    Analyze wind direction sectors for specific profiles within ±time_window of CARRA timestamps.
+
+    Args:
+        carra_path (str): Path to CARRA wind direction NetCDF file
+        profile_times_path (str): Path to profile_times.csv
+        specific_profiles_path (str): Path to text file with specific profiles to analyze
+        lat (float): Latitude of interest (default: Tundra coordinate)
+        lon (float): Longitude of interest (default: Tundra coordinate)
+        time_window_hours (float): Time window in hours (default: 1.5)
+
+    Returns:
+        dict: Counts of profiles per wind direction sector
+    """
+    # Load and process CARRA data
+    ds_carra = xr.open_dataset(carra_path)
+    ds_carra["longitude"] = xr.where(
+        ds_carra["longitude"] > 180, ds_carra["longitude"] - 360, ds_carra["longitude"]
+    )
+
+    # Find nearest grid point
+    squared_diff = (ds_carra.latitude - lat) ** 2 + (ds_carra.longitude - lon) ** 2
+    min_pos = np.argmin(squared_diff.values)
+    y_idx, x_idx = np.unravel_index(min_pos, squared_diff.shape)
+
+    # Extract wind directions
+    wdir_series = ds_carra["wdir"].isel(y=y_idx, x=x_idx).to_pandas()
+
+    # Load profile data
+    profile_times = pd.read_csv(profile_times_path, parse_dates=["Time"])
+
+    # Load and filter specific profiles
+    with open(specific_profiles_path, "r") as f:
+        profile_filenames = [line.strip() for line in f.readlines()]
+    specific_profiles = [
+        f.replace("merged_", "").rsplit("-", 1)[0] for f in profile_filenames
+    ]
+    filtered_profiles = profile_times[
+        profile_times["Profile"].apply(
+            lambda profile: any(sub in profile for sub in specific_profiles)
+        )
+    ]
+
+    # Categorization function
+    def categorize_wind(wd):
+        if (315 <= wd <= 360) or (0 <= wd <= 45):
+            return "north"
+        elif 45 < wd <= 135:
+            return "east"
+        elif 135 < wd <= 225:
+            return "south"
+        else:
+            return "west"
+
+    # Categorize CARRA winds
+    wdir_categorized = wdir_series.apply(categorize_wind)
+
+    # Initialize counts
+    counts = {"north": 0, "east": 0, "south": 0, "west": 0}
+    time_window = timedelta(hours=time_window_hours)
+
+    # Analyze matches
+    for _, row in filtered_profiles.iterrows():
+        profile_time = row["Time"]
+        carra_in_window = wdir_series.index[
+            (wdir_series.index >= profile_time - time_window)
+            & (wdir_series.index <= profile_time + time_window)
+        ]
+
+        if not carra_in_window.empty:
+            sector = wdir_categorized.loc[carra_in_window[0]]
+            counts[sector] += 1
+
+    return counts

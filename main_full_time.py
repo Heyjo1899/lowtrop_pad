@@ -36,11 +36,17 @@ from lowtrop_pad.full_time_plotting import (
     plot_smb_cluster,
     plot_smb_mar,
     cluster_contribution,
-    plot_yearly_mean_smb,
+    plot_smb_and_t2m_anomalies,
     daily_means_per_cluster,
     plot_yearly_smb_with_t2m_anomalies,
     plot_smb_vs_elevation,
     plot_smb_doy_cluster,
+    plot_combined_climatology_and_correlation,
+    plot_combined_synoptic_and_occurrences,
+    plot_smb_cluster_elevation,
+    plot_smb_vs_ela,
+    plot_smb_time_and_hyps,
+    plot_smb_t2m_anomalies_and_scatter,
 )
 
 from lowtrop_pad.mar_processing import (
@@ -49,6 +55,7 @@ from lowtrop_pad.mar_processing import (
     convert_smb,
     merge_mar_cluster,
     mar_to_elev_bins,
+    summarize_ela_AAR,
 )
 
 # Combine CARRA datasets to include t2m and tskin (13 levels total)
@@ -154,7 +161,7 @@ if False:
     # Call the function
     plot_monthly(input_directory, output_path, vmin=-2.5, vmax=2.5, ylim=500)
 
-# Plot Mean Monthly and Yearly PROFILES
+# Plot Mean Monthly and Yearly profiles
 if False:
     input_directory = r"data\reanalysis\carra_1991_2024\resampled"
     output_path = r"plots\carra_1991_2024\monthly_profiles"
@@ -331,11 +338,13 @@ if False:
     )
 
 # Cluster the data based on gradients and plot mean profiles per cluster and occurences
-if False:
+if True:
     gradient_file = r"data\reanalysis\carra_1991_2024\resampled_gradients\tundra_gradients_carra_1991_2024.csv"
     # I can choose profile file of my choice
-    profile_file = r"data\reanalysis\carra_1991_2024\resampled_gradients\tundra_gradients_carra_1991_2024.csv"
-    output_dir = r"plots\carra_1991_2024\KM_Clusters\mean_profiles"
+    profile_file = (
+        r"data\reanalysis\carra_1991_2024\resampled\tundra_1991_2024_resampled.csv"
+    )
+    output_dir = r"plots\publication_plots"
 
     kmeans_results = km_clusters(
         gradient_file=gradient_file,
@@ -347,7 +356,7 @@ if False:
         ymax=500,
         random_state=42,  # set to 42 for deterministic approach
         max_iter=500,
-        include_single_profiles=True,
+        include_single_profiles=False,
     )
 
 # Plot mean difference anomaly related to each cluster
@@ -432,8 +441,8 @@ if False:
 
     # Set parameters
     p_value_sigma = 0.7  # Gaussian smoothing for snow fraction data
-    correlation_filter_sigma = 1.0  # Gaussian smoothing for correlation results
-    p_value_thresh = 0.05  # Significance level for correlation
+    correlation_filter_sigma = 0  # Gaussian smoothing for correlation results
+    p_value_thresh = 0.01  # Significance level for correlation
     ylim_max = 500  # Maximum value for height axis
 
     # Call the function
@@ -458,6 +467,12 @@ if False:  # subset and extract yearly files
     # merge files by time
     merge_files_by_time(output_dir, combined_output_path)
 
+# parse mar data into elevation bins
+if False:
+    input_file = r"G:\LOWTROP_VRS\data\mar_FI_1991_2024.nc"
+    output_dir = r"data\mar_smb_1991_2024_FI"
+    mar_to_elev_bins(file_path_mar=input_file, output_dir=output_dir, summer=False)
+
 # convert smb data to csv
 if False:
     input_file = r"G:\LOWTROP_VRS\data\mar_FI_1991_2024.nc"
@@ -465,14 +480,16 @@ if False:
     convert_smb(input_file, output_dir)
 
 if False:
+    print("merge mar smb and cluster assignments")
     # merge mar smb and cluster data and save as csv
     smb_csv_path = r"data\mar_smb_1991_2024_FI\FI_mar_smb.csv"
-    cluster_csv_path = r"C:\Users\jonat\OneDrive - Universität Graz\MASTERARBEIT\Analysis\lowtrop_pad\results\k_means\100_5_clusters.csv"
+    cluster_csv_path = r"results\k_means\100_5_clusters.csv"
     output_dir = r"results\k_means"
     merge_mar_cluster(smb_csv_path, cluster_csv_path, output_dir)
 
 # Plot smb violin/boxplots plots per cluster
 if False:
+    print("smb boxplots and violins per cluster")
     file_path_merged_df = r"results\k_means\mar_cluster_merged.csv"
     output_dir = r"plots\flade_isblink\clusters_smb"
 
@@ -510,6 +527,7 @@ if False:
 
 if False:
     # plot mean SMB for DOY per cluster
+    print("SMB over DOY per cluster")
     file_path_merged_df = r"results\k_means\mar_cluster_merged.csv"
     output_dir = r"plots\flade_isblink\clusters_smb"
     daily_means_per_cluster(
@@ -518,38 +536,36 @@ if False:
 
 if False:
     # summarize cluster contribution to total SMB in html file
+    print("cluster contribution table and annual mean smb + trends")
     file_path_merged_df = r"results\k_means\mar_cluster_merged.csv"
     output_dir = r"results\k_means"
     cluster_contribution(file_path_merged_df, output_dir)
 
     # plot yearly mean smb + trendlines
     output_dir = r"plots\flade_isblink\clusters_smb"
-    plot_yearly_mean_smb(file_path_merged_df, output_dir)
-    t2m_anomaly_file = r"data\reanalysis\carra_1991_2024\resampled_anomalies\ice_1991_2024_resampled_anomalies.csv"
-    plot_yearly_smb_with_t2m_anomalies(
-        file_path_merged_df, t2m_anomaly_file, output_dir
-    )
+    plot_yearly_smb_with_t2m_anomalies(file_path_merged_df, output_dir)
 
 # Plot SMB values for Flade Isblink
 if False:
+    print("SMB Flade Isblink")
     file_path_smb = r"data\mar_smb_1991_2024_FI\FI_mar_smb.csv"
     output_dir = r"plots\flade_isblink\smb"
     plot_smb_mar(file_path_smb, output_dir)
 
-# parse mar data into elevation bins
-if False:
-    input_file = r"G:\LOWTROP_VRS\data\mar_FI_1991_2024.nc"
-    output_dir = r"data\mar_smb_1991_2024_FI"
-    mar_to_elev_bins(file_path_mar=input_file, output_dir=output_dir, summer=False)
-
 if False:
     # plot smb vs elevation and calculate hypsometric effect
+    print("Hypsometry Flade Isblink")
     input_file = r"data\mar_smb_1991_2024_FI\mar_1991_2024_elev_10_bins.csv"
     output_dir = r"plots\flade_isblink\smb"
-    plot_smb_vs_elevation(input_file=input_file, output_dir=output_dir, hypso_stat=True)
+    plot_smb_vs_elevation(input_file=input_file, output_dir=output_dir)
 
-if True:
-    # Usage:
+    output_csv = r"results\k_means"
+    summary_df = summarize_ela_AAR(input_file, output_csv)
+    print(summary_df)
+
+if False:
+    # SMB over DOY per cluster and elevation bins
+    print("SMB over day per cluster and elev bin")
     mar_elev_bin_file = r"data\mar_smb_1991_2024_FI\mar_1991_2024_elev_10_bins.csv"
     cluster_file = r"results\k_means\100_5_clusters.csv"
     output_dir = r"plots\flade_isblink\smb"
@@ -558,8 +574,95 @@ if True:
         cluster_file=cluster_file,
         output_dir=output_dir,
     )
-'''
-Calculating strength of hypsometric effect: 
-- Graphically: Calculate total SMB contribution by multiplying mean SMB with the total AREA per bin.
-- Numerically: Hoch much is the total change between SMB periods for the 2 bins that changed effect direction
-'''
+
+if False:
+    # Climatology of Difference and Snow fraction + Correaltion Heatmap difference and snow fraction anomaly
+    input_file_climatology = (
+        r"data\reanalysis\carra_1991_2024\differences\tundra-ice_differences.csv"
+    )
+    snow_fraction_file = (
+        r"data\reanalysis\carra_1991_2024\raw\snow_fraction_1991_2024.csv"
+    )
+    input_file_anomalies = r"data\reanalysis\carra_1991_2024\differences_anomalies\tundra-ice_differences_anomalies.csv"
+    output_dir = r"plots\publication_plots"
+
+    fig = plot_combined_climatology_and_correlation(
+        input_file_climatology=input_file_climatology,
+        input_file_anomalies=input_file_anomalies,
+        snow_fraction_file=snow_fraction_file,
+        output_dir=output_dir,
+        vmin=-2,
+        vmax=2,
+        ylim=500,
+        smooth_window=5,
+        p_value_sigma=0,
+        correlation_filter_sigma=1,
+        p_value_thresh=0.01,
+    )
+
+if False:
+    # Plot synoptic conditions and cluster occurrences
+    anomaly_file_path = (
+        r"G:\LOWTROP_VRS\data\reanalysis\era5_1991_2024_anomalies_smooth2.nc"
+    )
+    clusters_df_path = r"results\k_means\100_5_clusters.csv"
+    profile_times_path = r"results\uav_time_map\profile_times.csv"
+    output_path = r"plots\publication_plots"
+
+    plot_combined_synoptic_and_occurrences(
+        clusters_df_path=clusters_df_path,
+        anomaly_file_path=anomaly_file_path,
+        profile_times_path=profile_times_path,
+        output_path=output_path,
+        vmin=-2.5,
+        vmax=2.5,
+    )
+
+# SMB over DOY per Cluster and SMB per Cluster over elev bins
+if True:
+    df_mar_cluster_merged = r"results\k_means\mar_cluster_merged.csv"
+    df_mar_elev = r"data\mar_smb_1991_2024_FI\mar_1991_2024_elev_10_bins.csv"
+    cluster_file = r"results\k_means\100_5_clusters.csv"
+    output_dir = r"plots\publication_plots"
+    plot_smb_cluster_elevation(
+        df_mar_cluster_merged, df_mar_elev, cluster_file, output_dir
+    )
+
+if True:
+    # summarize cluster contribution to total SMB in html file
+    file_path_merged_df = r"results\k_means\mar_cluster_merged.csv"
+    output_dir = r"results\k_means"
+    cluster_contribution(file_path_merged_df, output_dir)
+
+    # plot yearly mean smb + trendlines and scatter JJA T and JJA SMB in 2nd function
+    output_dir = r"plots\publication_plots"
+    plot_smb_and_t2m_anomalies(file_path_merged_df, output_dir)
+    plot_smb_t2m_anomalies_and_scatter(file_path_merged_df, output_dir)
+
+if False:
+    # plot scatter of yearly SMB vs ELA
+    input_file = r"data\mar_smb_1991_2024_FI\mar_1991_2024_elev_10_bins.csv"
+    output_dir_df = r"data\mar_smb_1991_2024_FI"
+    output_dir_plot = r"plots\flade_isblink\smb"
+    plot_smb_vs_ela(
+        input_file=input_file,
+        output_dir_df=output_dir_df,
+        output_dir_plot=output_dir_plot,
+        smoothing=True,
+        frac=0.45,
+    )
+
+
+if True:
+    # 4 mass balance publication plots combined
+    file_path_smb = r"data\mar_smb_1991_2024_FI\FI_mar_smb.csv"
+    file_path_elev = r"data\mar_smb_1991_2024_FI\mar_1991_2024_elev_10_bins.csv"
+    file_path_zero = r"data\mar_smb_1991_2024_FI\ela_smb_df.csv"
+    output_dir = r"plots\publication_plots"
+    plot_smb_time_and_hyps(file_path_smb, file_path_elev, file_path_zero, output_dir)
+
+
+# convert_smb add temp for average over ice cap: ttz_2m = ds["TTZ"].sel(ZTQLEV=2.0)
+# make sure merge_mar_cluster function to merge cluster and smb also includes temp then
+# plot_yearly_mean_smb code for plotting > Adding temp as 2nd plot then OR
+# plot_yearly_smb_with_t2m_anomalies old code using carra ice t2m adapt

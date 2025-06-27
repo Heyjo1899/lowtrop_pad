@@ -1,10 +1,42 @@
-import os
-import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.dates import DateFormatter
-import numpy as np
-from matplotlib.patches import Patch
-import seaborn as sns
+# Configuration of the plotting settings
+if True:
+    import glob
+    import os
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from matplotlib.dates import DateFormatter
+    import numpy as np
+    from matplotlib.patches import Patch
+    import seaborn as sns
+    from matplotlib import colors as mcolors
+    from cycler import cycler
+    import matplotlib as mpl
+    from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
+
+    # Function to reduce saturation
+    def adjust_saturation(color, sat_factor):
+        rgb = mcolors.to_rgb(color)  # Convert hex to RGB
+        hsv = mcolors.rgb_to_hsv(rgb)  # Convert RGB to HSV
+        hsv = (hsv[0], hsv[1] * sat_factor, hsv[2])  # Reduce saturation
+        return mcolors.to_hex(mcolors.hsv_to_rgb(hsv))  # Convert back to hex
+
+    # Adjust the saturation of the first color
+    salmon_color = "#FF1F5B"
+    adjusted_first_color = adjust_saturation(
+        salmon_color, 0.8
+    )  # Reduce saturation by 20%
+
+    # Define new cycler for categorical colors for cluster data
+    default_cycler = cycler(
+        color=["#AF58BA", "#F28522", "#009ADE", adjusted_first_color, "#FFC61E"]
+    ) + cycler(linestyle=["-", "--", ":", "-.", (0, (3, 1, 1, 1, 1, 1))])
+
+    # Apply settings with correct rcParams syntax:
+    mpl.rcParams["lines.linewidth"] = 2.5
+    mpl.rcParams["axes.prop_cycle"] = default_cycler
+    mpl.rcParams["pdf.fonttype"] = 42
+    mpl.rcParams["ps.fonttype"] = 42
+    mpl.rcParams["font.family"] = "Arial"
 
 
 def split_and_concatenate(file):
@@ -420,10 +452,8 @@ def plot_mean_differences_matrix(
             MAD_df_carra = pd.DataFrame()  # initializing df to store MAD
         if dataset == "era5":
             MAD_df_era5 = pd.DataFrame()
-        fig, axs = plt.subplots(5, 5, figsize=(20, 20))
-        fig.suptitle(
-            f"Differences for {dataset.upper()}", fontsize=18, fontweight="bold"
-        )
+        fig, axs = plt.subplots(5, 5, figsize=(10, 10))
+        fig.suptitle("Wind sector", fontsize=10, fontweight="bold")
         fig.supylabel("Altitude above gorund (m)", fontsize=17, fontweight="bold")
         fig.supxlabel(
             f"Temperature Difference XQ2-{dataset.upper()} (°C)",
@@ -1309,3 +1339,419 @@ def plot_profiles_array_resampled(
     )
     plt.savefig(output_file_path, bbox_inches="tight")
     plt.close()
+
+
+def plot_mean_profiles_on_ax(ax, profiles_path, filter_height=495):
+    """
+    Plot mean vertical temperature profiles on the provided axis.
+
+    For each CSV file in profiles_path (only for surfaces 'tundra', 'ice', 'water', 'lake'):
+      - Read the data (with alt_ag as index) and drop altitudes below 1 m.
+      - Keep only those columns (profiles) that have non-NaN values for alt_ag >= filter_height.
+      - Restrict the altitude range to 1 - filter_height.
+      - Compute the mean profile (averaging over valid columns) and record the count.
+    Then, plot each individual surface's mean profile (using a distinct color from tab10 and a distinct line style)
+    and plot the overall mean (average over surfaces) in black.
+
+    Parameters:
+      ax: matplotlib Axes on which to plot.
+      profiles_path (str): Path where the CSV files are located.
+      filter_height (int): Altitude threshold (in meters) for filtering valid profiles.
+    """
+    file_pattern = os.path.join(profiles_path, "*.csv")
+    files = glob.glob(file_pattern, recursive=True)
+
+    valid_surfaces = ["tundra", "ice", "water", "lake"]
+    # Dictionary to hold each surface's mean profile and count: {surface: (mean_profile, count)}
+    profiles = {}
+
+    for file in files:
+        base = os.path.basename(file).lower()
+        # Check if the filename contains one of the valid surface names.
+        surface_found = None
+        for surf in valid_surfaces:
+            if surf in base:
+                surface_found = surf
+                break
+        if surface_found is None:
+            continue  # skip files not corresponding to one of the four surfaces
+
+        print(f"Processing profile file for {surface_found}: {file}")
+        try:
+            df = pd.read_csv(file, index_col="alt_ag")
+        except Exception as e:
+            print(f"Error reading profile file {file}: {e}")
+            continue
+
+        # Remove altitudes below 1 m and sort.
+        df = df.loc[df.index >= 2]
+        df.sort_index(inplace=True)
+
+        # Filter columns: keep only those columns for which the data for alt_ag >= filter_height is complete.
+        valid_columns = [
+            col
+            for col in df.columns
+            if df.loc[df.index >= filter_height, col].notnull().any()
+        ]
+        if not valid_columns:
+            print(
+                f"No valid profile columns in {file} (missing data above {filter_height} m)"
+            )
+            continue
+
+        df_valid = df[valid_columns]
+        # Restrict altitude range to between 1 and filter_height.
+        df_valid = df_valid.loc[
+            (df_valid.index >= 1) & (df_valid.index <= filter_height)
+        ]
+        # Compute the mean temperature profile (averaging over valid columns).
+        mean_profile = df_valid.mean(axis=1)
+        count_profiles = len(valid_columns)
+
+        profiles[surface_found] = (mean_profile, count_profiles)
+
+    if len(profiles) < 4:
+        print("Not all four surfaces have valid profiles for the mean calculation.")
+        return
+
+    # Get colors from the tab10 colormap.
+    tab10_colors = plt.get_cmap("tab10").colors
+
+    # Plot each individual surface profile.
+    for i, surface in enumerate(valid_surfaces):
+        if surface in profiles:
+            mean_profile, count_profiles = profiles[surface]
+            ax.plot(
+                mean_profile.values,
+                mean_profile.index,
+                label=f"{surface.capitalize()} (n={count_profiles})",
+                color=tab10_colors[i % len(tab10_colors)],
+                linewidth=2,
+            )
+
+    ax.set_xlabel("Air Temperature (°C)", fontsize=11)
+    ax.set_ylabel("Altitude above ground (m)", fontsize=11)
+    ax.legend(fontsize=8, handlelength=2.5)
+
+    ax.grid(True)
+
+
+def plot_validation_and_mean_profiles(
+    input_directory_diff, input_directory_corr, output_directory, variable_to_plot="r"
+):
+    """
+    Create a combined figure with a 5x5 grid of difference plots on the left
+    (each annotated with n, MAD, and correlation r in a colored box) and an
+    empty axis on the right for the heatmap.
+
+    Parameters:
+      input_directory_diff (str): Directory containing difference CSV files.
+      input_directory_corr (str): Directory containing correlation CSV files.
+      wind_directions (list): List of wind direction categories.
+      surfaces (list): List of surface categories.
+      variable_to_plot (str): Column name for correlation values (default "r").
+
+    Returns:
+      fig (Figure): The matplotlib figure.
+      diff_axes (ndarray): Array of axes for the 5x5 difference grid.
+      ax_heatmap (Axes): The empty axis reserved for the heatmap.
+    """
+
+    wind_directions = ["north", "east", "south", "west", "all"]
+    surfaces = ["tundra", "ice", "water", "lake", "all"]
+    # === Nested Helper Functions ===
+
+    def process_difference_file(file_path):
+        try:
+            df = pd.read_csv(file_path)
+            if df.empty:
+                return None, None, None
+        except Exception as e:
+            print(f"Skipping {file_path}: {e}")
+            return None, None, None
+
+        filename = os.path.basename(file_path)
+        parts = filename.split("_")
+        if len(parts) < 4:
+            return None, None, None
+
+        surface = parts[2]
+        wind_direction = parts[-1].split(".")[0]
+        if surface not in surfaces or wind_direction not in wind_directions:
+            return None, None, None
+
+        df = df.dropna(subset=["alt_ag", "mean"])
+        return surface, wind_direction, df
+
+    def plot_difference(ax, df, r_value=None):
+        # Compute differences, mean absolute difference (MAD), and number of profiles.
+        diff_cols = df.columns.difference(["alt_ag", "mean"])
+        df_diffs = df[diff_cols]
+        mad = df_diffs.abs().mean().mean()
+        n_profiles = len(diff_cols)
+
+        # Plot each individual difference profile.
+        for col in diff_cols:
+            ax.plot(
+                df[col],
+                df["alt_ag"],
+                alpha=0.3,
+                linewidth=0.5,
+                linestyle="-",
+                color="blue",
+            )
+
+        # Plot the main mean difference line.
+        ax.plot(
+            df["mean"],
+            df["alt_ag"],
+            label="MD",
+            linewidth=1.2,
+            linestyle="-",
+            color="blue",
+        )
+
+        # Annotate with n and MAD in one box.
+        annotation_text = f"n={n_profiles}\nMAD={mad:.2f}"
+        bbox_props = dict(
+            boxstyle="round,pad=0.2", edgecolor="black", facecolor="lightgrey", alpha=1
+        )
+        ax.annotate(
+            annotation_text,
+            xy=(0.02, 0.78),
+            xycoords="axes fraction",
+            fontsize=7,
+            ha="left",
+            bbox=bbox_props,
+        )
+
+        # Annotate r in a second box if available.
+        if r_value is not None and not np.isnan(r_value):
+            cmap = plt.get_cmap("coolwarm")
+            r_color = cmap((r_value + 1) / 2)
+            r_text = f"t={r_value:.2f}"
+            bbox_r = dict(
+                boxstyle="round,pad=0.2", edgecolor="black", facecolor=r_color, alpha=1
+            )
+            ax.annotate(
+                r_text,
+                xy=(0.02, 0.62),
+                xycoords="axes fraction",
+                fontsize=7,
+                fontweight="semibold",
+                ha="left",
+                bbox=bbox_r,
+            )
+
+        ax.grid(True, linestyle="--", alpha=0.5)
+
+    def process_correlation_file(file_path):
+        try:
+            df = pd.read_csv(file_path)
+            print("Unique wind directions in data:", df["wind_direction"].unique())
+        except Exception as e:
+            print(f"Error reading {file_path}: {e}")
+            return None, None
+
+        matrix_r = df.pivot_table(
+            index="surface",
+            columns="wind_direction",
+            values=variable_to_plot,
+            aggfunc="mean",
+        )
+        matrix_n = df.pivot_table(
+            index="surface",
+            columns="wind_direction",
+            values=variable_to_plot,
+            aggfunc="count",
+        )
+
+        # Only include categories except "all" initially.
+        matrix_r = matrix_r.reindex(
+            index=[s for s in surfaces if s != "all"],
+            columns=[wd for wd in wind_directions if wd != "all"],
+        )
+        matrix_n = matrix_n.reindex(
+            index=[s for s in surfaces if s != "all"],
+            columns=[wd for wd in wind_directions if wd != "all"],
+        )
+
+        matrix_r = pd.DataFrame(matrix_r)
+        matrix_n = pd.DataFrame(matrix_n)
+
+        full_index = surfaces
+        full_columns = wind_directions
+        matrix_r_full = matrix_r.reindex(index=full_index, columns=full_columns)
+        matrix_n_full = matrix_n.reindex(index=full_index, columns=full_columns)
+
+        # Fill in the "all" row and column.
+        for wd in [wd for wd in wind_directions if wd != "all"]:
+            df_wd = df[df["wind_direction"] == wd]
+            matrix_r_full.loc["all", wd] = df_wd[variable_to_plot].mean()
+            matrix_n_full.loc["all", wd] = df_wd[variable_to_plot].count()
+
+        for s in [s for s in surfaces if s != "all"]:
+            df_s = df[df["surface"] == s]
+            matrix_r_full.loc[s, "all"] = df_s[variable_to_plot].mean()
+            matrix_n_full.loc[s, "all"] = df_s[variable_to_plot].count()
+
+        matrix_r_full.loc["all", "all"] = df[variable_to_plot].mean()
+        matrix_n_full.loc["all", "all"] = df[variable_to_plot].count()
+
+        matrix_r_full = matrix_r_full.loc[full_index, full_columns]
+        matrix_n_full = matrix_n_full.loc[full_index, full_columns]
+
+        return matrix_r_full, matrix_n_full
+
+    # === Main Code Inside the Function ===
+
+    # Process the correlation file first to get the correlation matrix.
+    matrix_r = None
+    corr_file_pattern = os.path.join(input_directory_corr, "**", "*carra.csv")
+    corr_files = glob.glob(corr_file_pattern, recursive=True)
+    for file_path in corr_files:
+        print(f"Processing correlation file: {file_path}")
+        matrix_r, matrix_n = process_correlation_file(file_path)
+        if matrix_r is not None:
+            break  # Use only the first valid correlation file.
+
+    # Create a figure divided into two regions:
+    fig = plt.figure(figsize=(10, 6))
+    outer_gs = GridSpec(1, 3, width_ratios=[1.2, 0.0, 2.4])
+
+    # Create nested GridSpec for the 5x5 grid.
+    gs_diff = GridSpecFromSubplotSpec(
+        5, 5, subplot_spec=outer_gs[2], wspace=0.1, hspace=0.1
+    )
+    diff_axes = np.empty((len(surfaces), len(wind_directions)), dtype=object)
+    for i in range(len(surfaces)):
+        for j in range(len(wind_directions)):
+            ax = fig.add_subplot(gs_diff[i, j])
+            diff_axes[i, j] = ax
+
+    # Create the (currently empty) profiles axis.
+    ax_profiles = fig.add_subplot(outer_gs[0])
+    # ax_profiles.clear()
+    # Fill this axis using the helper function.
+    plot_mean_profiles_on_ax(
+        ax_profiles, profiles_path=r"results/profiles_over_time", filter_height=495
+    )
+
+    # Optionally hide x-axis (except bottom row) and y-axis tick labels (except left column).
+    for i in range(len(surfaces)):
+        for j in range(len(wind_directions)):
+            if i < len(surfaces) - 1:
+                plt.setp(diff_axes[i, j].get_xticklabels(), visible=False)
+            if j > 0:
+                plt.setp(diff_axes[i, j].get_yticklabels(), visible=False)
+
+    # Process all difference CSV files.
+    global_min, global_max = None, None
+    diff_file_pattern = os.path.join(input_directory_diff, "*carra*.csv")
+    for file_path in glob.glob(diff_file_pattern):
+        surface, wind_direction, df = process_difference_file(file_path)
+        if df is None:
+            continue
+
+        s_idx = surfaces.index(surface)
+        w_idx = wind_directions.index(wind_direction)
+
+        # Get the correlation value (if available) for this combination.
+        r_value = None
+        if matrix_r is not None:
+            try:
+                r_value = matrix_r.loc[surface, wind_direction]
+            except KeyError:
+                r_value = None
+
+        # Plot the difference data with annotations.
+        plot_difference(diff_axes[s_idx, w_idx], df, r_value=r_value)
+
+        # add no data annotation for empty plot
+        diff_axes[2, 0].annotate(
+            "No Data",
+            xy=(0.5, 0.5),
+            xycoords="axes fraction",
+            fontsize=7,
+            ha="center",
+            va="center",
+            bbox=dict(
+                boxstyle="round,pad=0.3", edgecolor="black", facecolor="lightgrey"
+            ),
+        )
+
+        # Use the "all-all" file to update global x-limits.
+        if surface == "all" and wind_direction == "all":
+            diff_cols = df.columns.difference(["alt_ag", "mean"])
+            df_diffs = df[diff_cols]
+            global_min = df_diffs.min().min()
+            global_max = df_diffs.max().max()
+
+    if global_min is not None and global_max is not None:
+        for ax in diff_axes.flat:
+            ax.set_xlim(global_min, global_max)
+            ax.set_ylim(0, 500)
+
+    # --- Adjust labels for the 5x5 grid ---
+    # Left column y-axis labels.
+    for i, surface in enumerate(surfaces):
+        label = "All Surfaces" if surface.lower() == "all" else surface.capitalize()
+        label = "Sea" if surface.lower() == "water" else surface.capitalize()
+        diff_axes[i, 0].set_ylabel(label, fontsize=10)
+    # Top row titles.
+    for j, wd in enumerate(wind_directions):
+        title = "All Directions" if wd.lower() == "all" else wd.capitalize()
+        diff_axes[0, j].set_title(title, fontsize=10)
+    # Common x-axis label.
+    diff_axes[-1, 2].set_xlabel("Air Temperature Differences ΔT (°C)", fontsize=11)
+
+    # Additional figure text annotations.
+    fig.text(
+        0.38,
+        0.5,
+        "Altitude Above Ground (m)",
+        va="center",
+        rotation="vertical",
+        fontsize=11,
+    )
+    fig.text(
+        outer_gs[0].get_position(fig).x0 - 0.05,
+        outer_gs[0].get_position(fig).y1 + 0.05,
+        "(a)",
+        fontsize=14,
+        fontweight="bold",
+        va="bottom",
+        ha="right",
+    )
+    fig.text(
+        outer_gs[2].get_position(fig).x0,
+        outer_gs[2].get_position(fig).y1 + 0.05,
+        "(b)",
+        fontsize=14,
+        fontweight="bold",
+        va="bottom",
+        ha="right",
+    )
+    pos = outer_gs[2].get_position(fig)
+    fig.text(
+        (pos.x0 + pos.x1) / 2,
+        pos.y1 + 0.05,
+        "Wind Directions",
+        ha="left",
+        va="bottom",
+        fontsize=12,
+    )
+    plt.tight_layout(rect=[0.01, 0.03, 1, 0.95])
+
+    # Save the figure to the output directory.
+    os.makedirs(output_directory, exist_ok=True)
+    output_file_png = os.path.join(
+        output_directory, "validation_and_mean_profiles_col.png"
+    )
+    plt.savefig(output_file_png, dpi=300)
+    output_file_pdf = os.path.join(
+        output_directory, "validation_and_mean_profiles_col.pdf"
+    )
+    plt.savefig(output_file_pdf, dpi=300)
+    plt.close()
+    print(f"Saved figure to {output_file_pdf}")
