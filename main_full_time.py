@@ -338,7 +338,7 @@ if False:
     )
 
 # Cluster the data based on gradients and plot mean profiles per cluster and occurences
-if True:
+if False:
     gradient_file = r"data\reanalysis\carra_1991_2024\resampled_gradients\tundra_gradients_carra_1991_2024.csv"
     # I can choose profile file of my choice
     profile_file = (
@@ -600,7 +600,7 @@ if False:
         p_value_thresh=0.01,
     )
 
-if False:
+if True:
     # Plot synoptic conditions and cluster occurrences
     anomaly_file_path = (
         r"G:\LOWTROP_VRS\data\reanalysis\era5_1991_2024_anomalies_smooth2.nc"
@@ -653,7 +653,7 @@ if False:
     )
 
 
-if True:
+if False:
     # 4 mass balance publication plots combined
     file_path_smb = r"data\mar_smb_1991_2024_FI\FI_mar_smb.csv"
     file_path_elev = r"data\mar_smb_1991_2024_FI\mar_1991_2024_elev_10_bins.csv"

@@ -28,11 +28,10 @@ import matplotlib.lines as mlines
 
 
 ### SETTING PLOT DEFAULT SETTINGS
-if True: 
-    
+if True:
     # Set Arial font family for all elements
-    plt.rc('font', family='sans-serif')
-    plt.rcParams['font.sans-serif'] = ['Arial']
+    plt.rc("font", family="sans-serif")
+    plt.rcParams["font.sans-serif"] = ["Arial"]
 
     # Function to reduce saturation
     def adjust_saturation(color, sat_factor):
@@ -42,19 +41,20 @@ if True:
         return mcolors.to_hex(mcolors.hsv_to_rgb(hsv))  # Convert back to hex
 
     # Adjust the saturation of the first color
-    green = 'green'
-    red = 'red'
+    green = "green"
+    red = "red"
     adjusted_green = adjust_saturation(green, 0.8)  # Reduce saturation by X%
     adjusted_red = adjust_saturation(red, 0.8)  # Reduce saturation by X%
     # Define new cycler for categorical colors for cluster data
-    default_cycler = (cycler(color=['#AF58BA', '#009ADE', adjusted_green, '#FFC61E', adjusted_red]) +
-                    cycler(linestyle=['-', '--', (0, (1, 1)), '-.', (0, (3, 1, 1, 1, 1, 1))]))
+    default_cycler = cycler(
+        color=["#AF58BA", "#009ADE", adjusted_green, "#FFC61E", adjusted_red]
+    ) + cycler(linestyle=["-", "--", (0, (1, 1)), "-.", (0, (3, 1, 1, 1, 1, 1))])
 
     # Apply settings
-    plt.rc('lines', linewidth=2.5)
-    plt.rc('axes', prop_cycle=default_cycler)
-    plt.rcParams['hatch.linewidth'] = 1.5
-    plt.rcParams['hatch.color'] = 'yellow'
+    plt.rc("lines", linewidth=2.5)
+    plt.rc("axes", prop_cycle=default_cycler)
+    plt.rcParams["hatch.linewidth"] = 1.5
+    plt.rcParams["hatch.color"] = "yellow"
 
 
 def plot_monthly(input_directory, output_path, vmin=-2.5, vmax=2.5, ylim=500):
@@ -1551,24 +1551,26 @@ def km_clusters(
     # Create a DataFrame with cluster assignments
     clusters = pd.DataFrame({"Date": grad_df.index, "Cluster": cluster_labels})
     clusters["Date"] = pd.to_datetime(clusters["Date"], dayfirst=True)
-    
+
     # start counting clusters at 1
-    clusters['Cluster'] = clusters['Cluster'] + 1
+    clusters["Cluster"] = clusters["Cluster"] + 1
 
     # sort clusters in a meaningful order
-    clusters.loc[clusters['Cluster'] == 1, 'Cluster'] = 20
-    clusters.loc[clusters['Cluster'] == 2, 'Cluster'] = 40
-    clusters.loc[clusters['Cluster'] == 3, 'Cluster'] = 10
-    clusters.loc[clusters['Cluster'] == 4, 'Cluster'] = 30
-    clusters.loc[clusters['Cluster'] == 5, 'Cluster'] = 50
-    clusters['Cluster'] = (clusters['Cluster']/10).astype(int)
+    clusters.loc[clusters["Cluster"] == 1, "Cluster"] = 20
+    clusters.loc[clusters["Cluster"] == 2, "Cluster"] = 40
+    clusters.loc[clusters["Cluster"] == 3, "Cluster"] = 10
+    clusters.loc[clusters["Cluster"] == 4, "Cluster"] = 30
+    clusters.loc[clusters["Cluster"] == 5, "Cluster"] = 50
+    clusters["Cluster"] = (clusters["Cluster"] / 10).astype(int)
 
     # Step 3: Load and preprocess the second file
     second_df = pd.read_csv(profile_file, index_col=0, parse_dates=True)
     second_df.index = pd.to_datetime(second_df.index, format="%d.%m.%Y")
     clusters["Date"] = pd.to_datetime(clusters["Date"], format="%Y-%m-%d")
     # Merge the clusters into the second_df DataFrame using index
-    second_df = second_df.merge(clusters.set_index("Date"), left_index=True, right_index=True, how="inner")
+    second_df = second_df.merge(
+        clusters.set_index("Date"), left_index=True, right_index=True, how="inner"
+    )
     # Count profiles per cluster (for the second file)
     cluster_sizes = second_df["Cluster"].value_counts()
 
@@ -1599,9 +1601,8 @@ def km_clusters(
 
     # Compute mean gradient profiles for each cluster
     mean_gradients = {}
-    
+
     for cluster in range(1, n_clusters + 1):
-        
         cluster_data = (
             grad_df_plot[grad_df_plot["Cluster"] == cluster]
             .loc[:, grad_cols]
@@ -1625,7 +1626,7 @@ def km_clusters(
                 linewidth=0.3,
                 alpha=0.2,
             )
-        
+
         # Individual profiles from gradient_file
         for _, row in grad_df.iterrows():
             single_gradient = row[grad_cols].values
@@ -1641,7 +1642,7 @@ def km_clusters(
     # Step 4.2: Plot mean gradients on the left panel (gradient_file)
     for cluster in range(1, n_clusters + 1):
         ax1.plot(
-            mean_gradients[cluster].values*100, # convert from °C/m to °C/100m
+            mean_gradients[cluster].values * 100,  # convert from °C/m to °C/100m
             heights_grad,
             linewidth=2,
         )
@@ -1656,7 +1657,7 @@ def km_clusters(
         ax2.plot(
             mean_profiles[cluster].values,
             heights_profile,
-            label=f"Cluster {cluster}\nn = {cluster_sizes.get(cluster, 0)}",
+            label=f"CL{cluster}\nn = {cluster_sizes.get(cluster, 0)}",
             linewidth=2,
         )
 
@@ -1674,29 +1675,49 @@ def km_clusters(
 
     # Collect legend handles and labels from ax2
     handles, labels = ax2.get_legend_handles_labels()
-    
-    ax1.text(-0.1, 1.05, '(a)', transform=ax1.transAxes,
-            fontsize=14, fontweight='bold', va='top', ha='right')
-    ax2.text(-0.02, 1.05, '(b)', transform=ax2.transAxes,
-            fontsize=14, fontweight='bold', va='top', ha='right')
-     
+
+    ax1.text(
+        -0.1,
+        1.05,
+        "(a)",
+        transform=ax1.transAxes,
+        fontsize=14,
+        fontweight="bold",
+        va="top",
+        ha="right",
+    )
+    ax2.text(
+        -0.02,
+        1.05,
+        "(b)",
+        transform=ax2.transAxes,
+        fontsize=14,
+        fontweight="bold",
+        va="top",
+        ha="right",
+    )
+
     # Add a figure-level legend below both plots, centered
     fig.legend(
-        handles, labels,
+        handles,
+        labels,
         loc="lower center",
-        bbox_to_anchor=(0.5, 0.0), 
+        bbox_to_anchor=(0.5, 0.0),
         ncol=5,
-        handletextpad=0.7,
+        handletextpad=0.9,
         columnspacing=1.0,
         frameon=False,
+        fontsize=10,
     )
 
     # Save the combined figure
     out_file_png = os.path.join(
-        output_dir, f"mean_profiles_{n_clusters}_cluster_single_{include_single_profiles}.png"
+        output_dir,
+        f"mean_profiles_{n_clusters}_cluster_single_{include_single_profiles}.png",
     )
     out_file_pdf = os.path.join(
-        output_dir, f"mean_profiles_{n_clusters}_cluster_single_{include_single_profiles}.pdf" 
+        output_dir,
+        f"mean_profiles_{n_clusters}_cluster_single_{include_single_profiles}.pdf",
     )
 
     plt.savefig(out_file_png, dpi=300)
@@ -2730,7 +2751,14 @@ def plot_smb_mar(file_path_smb, output_dir):
     # Customize first plot
     axs[0].set_ylabel("Specific SMB (m we)", fontsize=12)
     axs[0].set_xlim(-0.7, len(hydro_years) - 0.3)
-    axs[0].legend(fontsize=10, loc="lower left", bbox_to_anchor=(0.02, 0.02),ncol = 3, handletextpad=0.6, columnspacing=0.6)
+    axs[0].legend(
+        fontsize=10,
+        loc="lower left",
+        bbox_to_anchor=(0.02, 0.02),
+        ncol=3,
+        handletextpad=0.6,
+        columnspacing=0.6,
+    )
     axs[0].grid(linestyle="--", alpha=0.7, zorder=0)
 
     # Second plot: Cumulative mass balance
@@ -2823,12 +2851,13 @@ def cluster_contribution(file_path_merged_df, output_dir):
 
     print(f"Cluster contribution summary saved to {tablefile}")
 
+
 def plot_smb_t2m_anomalies_and_scatter(file_path_merged_df, output_dir):
     """
     Plot the yearly summer mean Surface Mass Balance (SMB) and Temperature Anomalies (T2m_anom)
     for each cluster with trend lines and significance markers in the legend.
     Additionally, add a scatterplot of all yearly data (SMB vs. T2m_anom).
-    
+
     Parameters:
     - file_path_merged_df (str): Path to the CSV file containing the merged data.
     - output_dir (str): Directory to save the output plot.
@@ -2838,11 +2867,19 @@ def plot_smb_t2m_anomalies_and_scatter(file_path_merged_df, output_dir):
     merged_df["Year"] = merged_df["Date"].dt.year
 
     # Compute yearly means per cluster (unstacked DataFrames)
-    yearly_means_smb = merged_df.groupby(["Year", "Cluster"])["Specific Mass Balance (mm WE)"].mean().unstack()
-    yearly_means_t2m = merged_df.groupby(["Year", "Cluster"])["T2m_anom"].mean().unstack()
+    yearly_means_smb = (
+        merged_df.groupby(["Year", "Cluster"])["Specific Mass Balance (mm WE)"]
+        .mean()
+        .unstack()
+    )
+    yearly_means_t2m = (
+        merged_df.groupby(["Year", "Cluster"])["T2m_anom"].mean().unstack()
+    )
 
     # Compute overall yearly means (all clusters combined)
-    all_yearly_means_smb = merged_df.groupby(["Year"])["Specific Mass Balance (mm WE)"].mean()
+    all_yearly_means_smb = merged_df.groupby(["Year"])[
+        "Specific Mass Balance (mm WE)"
+    ].mean()
     all_yearly_means_t2m = merged_df.groupby(["Year"])["T2m_anom"].mean()
     r_all, p_all = pearsonr(all_yearly_means_smb, all_yearly_means_t2m)
 
@@ -2850,21 +2887,23 @@ def plot_smb_t2m_anomalies_and_scatter(file_path_merged_df, output_dir):
     # Left column (60% width): two stacked plots sharing the x-axis (ax1 and ax2)
     # Right column (40% width): one scatter plot (ax3) spanning both rows.
     fig = plt.figure(figsize=(10, 6))
-    gs = gridspec.GridSpec(nrows=2, ncols=2, width_ratios=[0.6, 0.4], wspace=0.23, hspace=0.1)
+    gs = gridspec.GridSpec(
+        nrows=2, ncols=2, width_ratios=[0.6, 0.4], wspace=0.23, hspace=0.1
+    )
     ax1 = fig.add_subplot(gs[0, 0])
     ax2 = fig.add_subplot(gs[1, 0], sharex=ax1)
     ax3 = fig.add_subplot(gs[:, 1])
-    
+
     # Remove x tick labels from ax1 since it shares the x-axis with ax2
     ax1.tick_params(labelbottom=False)
 
     prop_cycle = plt.rcParams["axes.prop_cycle"]
-    
+
     cycle_styles = list(prop_cycle)
 
     # Extract colors and linestyles separately
-    default_colors = [s['color'] for s in cycle_styles]
-    default_linestyles = [s['linestyle'] for s in cycle_styles]
+    default_colors = [s["color"] for s in cycle_styles]
+    default_linestyles = [s["linestyle"] for s in cycle_styles]
 
     # -------------------------
     # Plot 1: Yearly SMB by Cluster (ax1)
@@ -2875,35 +2914,61 @@ def plot_smb_t2m_anomalies_and_scatter(file_path_merged_df, output_dir):
         y = yearly_means_smb[cluster]
         valid_mask = ~y.isna()
         x_valid, y_valid = x[valid_mask], y[valid_mask]
-        color = default_colors[cluster-1]
-        print('check', cluster)
+        color = default_colors[cluster - 1]
+        print("check", cluster)
 
-        linestyle = default_linestyles[cluster-1]
+        linestyle = default_linestyles[cluster - 1]
         # Plot main SMB line with dynamic linestyle
-        line, = ax1.plot(x_valid, y_valid, color=color, linestyle=linestyle, alpha=0.6, linewidth=1.3)
+        (line,) = ax1.plot(
+            x_valid, y_valid, color=color, linestyle=linestyle, alpha=0.6, linewidth=1.3
+        )
 
-        label = f"Cluster {cluster}"
+        label = f"CL{cluster}"
 
         # If there's enough data, compute and plot trendline
         if len(x_valid) > 1:
             slope, intercept, r_value, p_value, std_err = linregress(x_valid, y_valid)
-            trend_line, = ax1.plot(x_valid, slope * x_valid + intercept, linestyle="-", color=color, linewidth=2)
+            (trend_line,) = ax1.plot(
+                x_valid,
+                slope * x_valid + intercept,
+                linestyle="-",
+                color=color,
+                linewidth=2,
+            )
             if p_value < 0.05:
                 label += "*"  # Mark significance
 
-
         # Create legend handle with extracted linestyle
-        smb_legend_handles.append(mlines.Line2D([], [], linestyle=linestyle, color=color, linewidth=2, label=label))
+        smb_legend_handles.append(
+            mlines.Line2D(
+                [], [], linestyle=linestyle, color=color, linewidth=2, label=label
+            )
+        )
 
     ax1.set_ylim(-20, 4)
     ax1.set_ylabel("Specific SMB (mm w.e.)")
     ax1.grid(linestyle="--", alpha=0.7)
 
     # Use extracted styles in the legend
-    ax1.legend(handles=smb_legend_handles, fontsize=8, loc=[0.01, 0.01], 
-            handletextpad=0.15, columnspacing=0.15, frameon=True, ncol=5)
+    ax1.legend(
+        handles=smb_legend_handles,
+        fontsize=8,
+        loc=[0.01, 0.01],
+        handletextpad=0.3,
+        columnspacing=1,
+        frameon=True,
+        ncol=5,
+    )
 
-    ax1.text(-0.1, 1.05, "(a)", transform=ax1.transAxes, fontsize=14, fontweight="bold", va="center")
+    ax1.text(
+        -0.1,
+        1.05,
+        "(a)",
+        transform=ax1.transAxes,
+        fontsize=14,
+        fontweight="bold",
+        va="center",
+    )
 
     # -------------------------
     # Plot 2: Yearly T2m Anomaly by Cluster (ax2)
@@ -2914,23 +2979,35 @@ def plot_smb_t2m_anomalies_and_scatter(file_path_merged_df, output_dir):
         y = yearly_means_t2m[cluster]
         valid_mask = ~y.isna()
         x_valid, y_valid = x[valid_mask], y[valid_mask]
-        color = default_colors[cluster-1]
-        linestyle = default_linestyles[cluster-1]
+        color = default_colors[cluster - 1]
+        linestyle = default_linestyles[cluster - 1]
 
         # Plot main T2m line with dynamic linestyle
-        line, = ax2.plot(x_valid, y_valid, color=color, linestyle=linestyle, alpha=0.6, linewidth=1.3)
+        (line,) = ax2.plot(
+            x_valid, y_valid, color=color, linestyle=linestyle, alpha=0.6, linewidth=1.3
+        )
 
-        label = f"Cluster {cluster}"
+        label = f"CL{cluster}"
 
         # If there's enough data, compute and plot trendline
         if len(x_valid) > 1:
             slope, intercept, r_value, p_value, std_err = linregress(x_valid, y_valid)
-            trend_line, = ax2.plot(x_valid, slope * x_valid + intercept, linestyle="-", color=color, linewidth=2)
+            (trend_line,) = ax2.plot(
+                x_valid,
+                slope * x_valid + intercept,
+                linestyle="-",
+                color=color,
+                linewidth=2,
+            )
             if p_value < 0.05:
                 label += "*"  # Mark significance
 
         # Create legend handle with extracted linestyle
-        t2m_legend_handles.append(mlines.Line2D([], [], linestyle=linestyle, color=color, linewidth=2, label=label))
+        t2m_legend_handles.append(
+            mlines.Line2D(
+                [], [], linestyle=linestyle, color=color, linewidth=2, label=label
+            )
+        )
 
     ax2.set_ylim(-3, 3)
     ax2.set_ylabel("T2m Anomaly (°C)")
@@ -2938,12 +3015,26 @@ def plot_smb_t2m_anomalies_and_scatter(file_path_merged_df, output_dir):
     ax2.grid(linestyle="--", alpha=0.7)
 
     # Use extracted styles in the legend
-    ax2.legend(handles=t2m_legend_handles, fontsize=8, loc=[0.01, 0.01], 
-            handletextpad=0.15, columnspacing=0.15, frameon=True, ncol=5)
+    ax2.legend(
+        handles=t2m_legend_handles,
+        fontsize=8,
+        loc=[0.01, 0.01],
+        handletextpad=0.3,
+        columnspacing=1,
+        frameon=True,
+        ncol=5,
+    )
 
-    ax2.text(-0.12, 1.01, "(b)", transform=ax2.transAxes, fontsize=14, fontweight="bold", va="center")
+    ax2.text(
+        -0.12,
+        1.01,
+        "(b)",
+        transform=ax2.transAxes,
+        fontsize=14,
+        fontweight="bold",
+        va="center",
+    )
 
-    
     # -----------
     # Plot 3: Scatterplot of Yearly SMB vs. T2m Anomaly (ax3)
     # Set ax3 to be quadratic.
@@ -2954,7 +3045,7 @@ def plot_smb_t2m_anomalies_and_scatter(file_path_merged_df, output_dir):
         x = yearly_means_t2m[cluster]
         valid_mask = x.notna() & y.notna()
         x_valid, y_valid = x[valid_mask], y[valid_mask]
-        color = default_colors[cluster-1]
+        color = default_colors[cluster - 1]
         if cluster == 1:
             alpha = 0.9
         else:
@@ -2967,40 +3058,81 @@ def plot_smb_t2m_anomalies_and_scatter(file_path_merged_df, output_dir):
         else:
             cluster_corr[cluster] = np.nan
             significance = ""
-        label = f"Cluster {cluster}: r = {cluster_corr[cluster]:.2f}{significance}"
-        scatter_handles.append(mlines.Line2D([], [], marker="o", linestyle="None",
-                                             color=color, markersize=6, label=label))
+        label = f"CL{cluster}: r = {cluster_corr[cluster]:.2f}{significance}"
+        scatter_handles.append(
+            mlines.Line2D(
+                [],
+                [],
+                marker="o",
+                linestyle="None",
+                color=color,
+                markersize=6,
+                label=label,
+            )
+        )
 
     overall_significance = "*" if p_all < 0.05 else ""
     overall_label = f"All Cluster: r = {r_all:.2f}{overall_significance}"
-    overall_handle = mlines.Line2D([], [], marker="o", linestyle="None",
-                                color="grey", markersize=6, label=overall_label)
+    overall_handle = mlines.Line2D(
+        [],
+        [],
+        marker="o",
+        linestyle="None",
+        color="grey",
+        markersize=6,
+        label=overall_label,
+    )
     # Append the overall handle to the scatter handles.
     scatter_handles.append(overall_handle)
 
     # Now create the legend.
-    ax3.legend(handles=scatter_handles, fontsize=12, loc="upper center",
-            bbox_to_anchor=(0.5, -0.2), handletextpad=0.3, columnspacing=0.3, frameon=True)
+    ax3.legend(
+        handles=scatter_handles,
+        fontsize=12,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.2),
+        handletextpad=0.3,
+        columnspacing=0.3,
+        frameon=True,
+    )
     ax3.set_xlabel("T2m Anomaly (°C)")
     ax3.set_ylabel("Specific SMB (mm w.e.)")
     ax3.grid(linestyle="--", alpha=0.7)
-    
+
     # Place the legend centered below ax3.
-    ax3.legend(handles=scatter_handles, fontsize=11, loc="upper center",
-               bbox_to_anchor=(0.3, -0.2), handletextpad=0.3, columnspacing=0.3, frameon=False)
-    
+    ax3.legend(
+        handles=scatter_handles,
+        fontsize=11,
+        loc="upper center",
+        bbox_to_anchor=(0.3, -0.2),
+        handletextpad=0.3,
+        columnspacing=0.3,
+        frameon=False,
+    )
+
     # Move ax3 upward so its top aligns with ax1.
     pos = ax3.get_position()
     new_pos = [pos.x0, pos.y0 + 0.3, pos.width, pos.height - 0.3]
     ax3.set_position(new_pos)
-    
-    ax3.text(-0.05, 1.05, "(c)", transform=ax3.transAxes, fontsize=14,
-             fontweight="bold", va="center")
+
+    ax3.text(
+        -0.05,
+        1.05,
+        "(c)",
+        transform=ax3.transAxes,
+        fontsize=14,
+        fontweight="bold",
+        va="center",
+    )
 
     # Save the complete plot to file.
     os.makedirs(output_dir, exist_ok=True)
-    plot_filename_png = os.path.join(output_dir, "yearly_smb_and_t2m_anomalies_with_scatter.png")
-    plot_filename_pdf = os.path.join(output_dir, "yearly_smb_and_t2m_anomalies_with_scatter.pdf")
+    plot_filename_png = os.path.join(
+        output_dir, "yearly_smb_and_t2m_anomalies_with_scatter.png"
+    )
+    plot_filename_pdf = os.path.join(
+        output_dir, "yearly_smb_and_t2m_anomalies_with_scatter.pdf"
+    )
     plt.savefig(plot_filename_png, dpi=300, bbox_inches="tight")
     plt.savefig(plot_filename_pdf, dpi=300, bbox_inches="tight")
     plt.close()
@@ -3022,11 +3154,19 @@ def plot_smb_and_t2m_anomalies(file_path_merged_df, output_dir):
     merged_df["Year"] = merged_df["Date"].dt.year
 
     # Compute yearly means for SMB and T2m_anom
-    yearly_means_smb = merged_df.groupby(["Year", "Cluster"])["Specific Mass Balance (mm WE)"].mean().unstack()
-    yearly_means_t2m = merged_df.groupby(["Year", "Cluster"])["T2m_anom"].mean().unstack()
+    yearly_means_smb = (
+        merged_df.groupby(["Year", "Cluster"])["Specific Mass Balance (mm WE)"]
+        .mean()
+        .unstack()
+    )
+    yearly_means_t2m = (
+        merged_df.groupby(["Year", "Cluster"])["T2m_anom"].mean().unstack()
+    )
 
     # Set up figure with two subplots sharing x-axis
-    fig, axs = plt.subplots(nrows=2, figsize=(6, 6), sharex=True, gridspec_kw={'hspace': 0.05})
+    fig, axs = plt.subplots(
+        nrows=2, figsize=(6, 6), sharex=True, gridspec_kw={"hspace": 0.05}
+    )
 
     # Get default colors from matplotlib
     default_colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
@@ -3041,31 +3181,56 @@ def plot_smb_and_t2m_anomalies(file_path_merged_df, output_dir):
         # Remove NaN values
         valid_mask = ~y.isna()
         x_valid, y_valid = x[valid_mask], y[valid_mask]
-        
+
         if cluster == 1:
             alpha = 0.7
         else:
             alpha = 0.5
         # Scatter plot (consistent marker style)
-        ax1.scatter(x_valid, y_valid, marker="o",
-                    color=default_colors[cluster % len(default_colors)], alpha=alpha)
+        ax1.scatter(
+            x_valid,
+            y_valid,
+            marker="o",
+            color=default_colors[cluster % len(default_colors)],
+            alpha=alpha,
+        )
 
         # Trend line and significance check
         label = f"Cluster {cluster}"
         if len(x_valid) > 1:
             slope, intercept, r_value, p_value, std_err = linregress(x_valid, y_valid)
-            ax1.plot(x_valid, np.poly1d(np.polyfit(x_valid, y_valid, 1))(x_valid), 
-                     linestyle="--", color=default_colors[cluster % len(default_colors)])
+            ax1.plot(
+                x_valid,
+                np.poly1d(np.polyfit(x_valid, y_valid, 1))(x_valid),
+                linestyle="--",
+                color=default_colors[cluster % len(default_colors)],
+            )
             if p_value < 0.05:
                 label += "*"  # Mark significance
 
-        smb_legend_handles.append(mlines.Line2D([], [], marker="o", linestyle="None",
-                                                color="black", markerfacecolor=default_colors[cluster % len(default_colors)],
-                                                markersize=6, label=label))
+        smb_legend_handles.append(
+            mlines.Line2D(
+                [],
+                [],
+                marker="o",
+                linestyle="None",
+                color="black",
+                markerfacecolor=default_colors[cluster % len(default_colors)],
+                markersize=6,
+                label=label,
+            )
+        )
 
     ax1.set_ylabel("SMB (mm WE)")
     ax1.grid(linestyle="--", alpha=0.7)
-    ax1.legend(handles=smb_legend_handles, fontsize=9, loc=[1.01,0.54], handletextpad=0.3, columnspacing=0.3,frameon=True)
+    ax1.legend(
+        handles=smb_legend_handles,
+        fontsize=9,
+        loc=[1.01, 0.54],
+        handletextpad=0.3,
+        columnspacing=0.3,
+        frameon=True,
+    )
 
     # T2m Anomaly Plot (Bottom)
     ax2 = axs[1]
@@ -3082,35 +3247,78 @@ def plot_smb_and_t2m_anomalies(file_path_merged_df, output_dir):
         else:
             alpha = 0.5
         # Scatter plot (same marker style)
-        ax2.scatter(x_valid, y_valid, marker="o",
-                    color=default_colors[cluster % len(default_colors)], alpha=alpha)
+        ax2.scatter(
+            x_valid,
+            y_valid,
+            marker="o",
+            color=default_colors[cluster % len(default_colors)],
+            alpha=alpha,
+        )
 
         # Trend line and significance check
         label = f"Cluster {cluster}"
         if len(x_valid) > 1:
             slope, intercept, r_value, p_value, std_err = linregress(x_valid, y_valid)
-            ax2.plot(x_valid, np.poly1d(np.polyfit(x_valid, y_valid, 1))(x_valid), 
-                     linestyle="--", color=default_colors[cluster % len(default_colors)])
+            ax2.plot(
+                x_valid,
+                np.poly1d(np.polyfit(x_valid, y_valid, 1))(x_valid),
+                linestyle="--",
+                color=default_colors[cluster % len(default_colors)],
+            )
             if p_value < 0.05:
                 label += "*"  # Mark significance
-        
-        t2m_legend_handles.append(mlines.Line2D([], [], marker="o", linestyle="None",
-                                                color="black", markerfacecolor=default_colors[cluster % len(default_colors)],
-                                                markersize=6, label=label))
+
+        t2m_legend_handles.append(
+            mlines.Line2D(
+                [],
+                [],
+                marker="o",
+                linestyle="None",
+                color="black",
+                markerfacecolor=default_colors[cluster % len(default_colors)],
+                markersize=6,
+                label=label,
+            )
+        )
 
     ax2.set_ylabel("T2m Anomaly (°C)")
     ax2.set_xlabel("Year")
     ax2.grid(linestyle="--", alpha=0.7)
-    ax2.legend(handles=t2m_legend_handles, fontsize=9, loc=[1.01,0.54],handletextpad=0.3, columnspacing=0.3, frameon=True)
-    
+    ax2.legend(
+        handles=t2m_legend_handles,
+        fontsize=9,
+        loc=[1.01, 0.54],
+        handletextpad=0.3,
+        columnspacing=0.3,
+        frameon=True,
+    )
+
     # Add bold subplot labels "a" and "b" above the plots
-    ax1.text(-0.1, 1.05, "(a)", transform=ax1.transAxes, fontsize=14, fontweight="bold", va="center")
-    ax2.text(-0.1, 1.03, "(b)", transform=ax2.transAxes, fontsize=14, fontweight="bold", va="center")
+    ax1.text(
+        -0.1,
+        1.05,
+        "(a)",
+        transform=ax1.transAxes,
+        fontsize=14,
+        fontweight="bold",
+        va="center",
+    )
+    ax2.text(
+        -0.1,
+        1.03,
+        "(b)",
+        transform=ax2.transAxes,
+        fontsize=14,
+        fontweight="bold",
+        va="center",
+    )
 
     correlations = {}
     p_values = {}
 
-    all_yearly_means_smb = merged_df.groupby(["Year"])["Specific Mass Balance (mm WE)"].mean()
+    all_yearly_means_smb = merged_df.groupby(["Year"])[
+        "Specific Mass Balance (mm WE)"
+    ].mean()
     all_yearly_means_t2m = merged_df.groupby(["Year"])["T2m_anom"].mean()
     r_all, p_all = pearsonr(all_yearly_means_smb, all_yearly_means_t2m)
 
@@ -3126,21 +3334,22 @@ def plot_smb_and_t2m_anomalies(file_path_merged_df, output_dir):
             p_values[cluster] = np.nan
 
     # Create a DataFrame for the results
-    correlation_df = pd.DataFrame({
-        "Cluster": list(correlations.keys()) + ["All"],
-        "Correlation (r)": list(correlations.values()) + [r_all],
-        "p-value": list(p_values.values()) + [p_all]
-    })
+    correlation_df = pd.DataFrame(
+        {
+            "Cluster": list(correlations.keys()) + ["All"],
+            "Correlation (r)": list(correlations.values()) + [r_all],
+            "p-value": list(p_values.values()) + [p_all],
+        }
+    )
 
     # Convert DataFrame to HTML
-    table_html = correlation_df.to_html(index=False, float_format='%.3f')
+    table_html = correlation_df.to_html(index=False, float_format="%.3f")
 
     # Save the table to an HTML file
     with open("results\\k_means\\annual_JJA_corr_t2m_smb.html", "w") as f:
         f.write(table_html)
 
     print("HTML table saved as correlation_results.html")
-
 
     # Save the plot
     os.makedirs(output_dir, exist_ok=True)
@@ -3152,9 +3361,7 @@ def plot_smb_and_t2m_anomalies(file_path_merged_df, output_dir):
     print(f"Plot saved to {plot_filename_png}")
 
 
-def plot_yearly_smb_with_t2m_anomalies(
-    file_path_merged_df, output_dir
-):
+def plot_yearly_smb_with_t2m_anomalies(file_path_merged_df, output_dir):
     """
     Plots yearly mean specific mass balance (SMB) for each cluster, marking points by
     t2m anomaly with a colormap and adding trend lines with significance stars.
@@ -3166,7 +3373,7 @@ def plot_yearly_smb_with_t2m_anomalies(
     """
 
     merged_t_df = pd.read_csv(file_path_merged_df, parse_dates=["Date"])
-    
+
     # Add year column
     merged_t_df["Year"] = merged_t_df["Date"].dt.year
 
@@ -3188,12 +3395,12 @@ def plot_yearly_smb_with_t2m_anomalies(
     # Dictionary to store significance for each cluster
     significant_clusters = {}
 
-     # Define marker styles for clusters
+    # Define marker styles for clusters
     markers = ["o", "s", "D", "^", "*", "h"]
-    cmap = plt.cm.bwr 
+    cmap = plt.cm.bwr
     for cluster in yearly_means["Specific Mass Balance (mm WE)"].columns:
         # Define marker style and color
-        marker_style = markers[cluster % len(markers)]  
+        marker_style = markers[cluster % len(markers)]
         cluster_color = cluster_colors[cluster]  # Assign pre-defined color
 
         # Extract data
@@ -3202,13 +3409,24 @@ def plot_yearly_smb_with_t2m_anomalies(
         t2m_anom = yearly_means["T2m_anom", cluster]
 
         valid_mask = ~y.isna()
-        x_valid, y_valid, t2m_anom_valid = x[valid_mask], y[valid_mask], t2m_anom[valid_mask]
+        x_valid, y_valid, t2m_anom_valid = (
+            x[valid_mask],
+            y[valid_mask],
+            t2m_anom[valid_mask],
+        )
 
         # Scatter plot
         scatter = ax.scatter(
-            x_valid, y_valid, c=t2m_anom_valid, cmap=cmap,
-            vmin=-4, vmax=4, edgecolor="black", linewidth=0.5,
-            marker=marker_style, label=f"Cluster {cluster}",
+            x_valid,
+            y_valid,
+            c=t2m_anom_valid,
+            cmap=cmap,
+            vmin=-4,
+            vmax=4,
+            edgecolor="black",
+            linewidth=0.5,
+            marker=marker_style,
+            label=f"Cluster {cluster}",
         )
 
         # Add trend line with its specific color
@@ -3217,17 +3435,23 @@ def plot_yearly_smb_with_t2m_anomalies(
             significant_clusters[cluster] = p_value < 0.05
 
             ax.plot(
-                x_valid, np.poly1d(np.polyfit(x_valid, y_valid, 1))(x_valid),
-                linestyle="--", color=cluster_color  # Keep trendline color unique
+                x_valid,
+                np.poly1d(np.polyfit(x_valid, y_valid, 1))(x_valid),
+                linestyle="--",
+                color=cluster_color,  # Keep trendline color unique
             )
-    
+
     # Create legend handles with filled markers matching trendline colors
     legend_handles = [
         mlines.Line2D(
-            [], [], marker=markers[cluster % len(markers)], 
-            color="black", markerfacecolor=cluster_colors[cluster],  # Use trendline color
-            markersize=6, linestyle="None",
-            label=f"Cluster {cluster}{'*' if significant_clusters.get(cluster, False) else ''}"
+            [],
+            [],
+            marker=markers[cluster % len(markers)],
+            color="black",
+            markerfacecolor=cluster_colors[cluster],  # Use trendline color
+            markersize=6,
+            linestyle="None",
+            label=f"Cluster {cluster}{'*' if significant_clusters.get(cluster, False) else ''}",
         )
         for cluster in yearly_means["Specific Mass Balance (mm WE)"].columns
     ]
@@ -3384,7 +3608,7 @@ def plot_smb_vs_elevation(input_file, output_dir):
         )
         .reset_index()
     )
-    
+
     # Define the number of years in each bin
     years_in_bin = {1991: 12, 2003: 11, 2014: 11}
 
@@ -3535,7 +3759,7 @@ def plot_smb_doy_cluster(mar_elev_bin_file, cluster_file, output_dir):
             data["Mean_Elevation"],
             data["SMB"],
             label=f"Cluster {cluster}",
-            #linestyle="-",
+            # linestyle="-",
             marker="o",
         )
 
@@ -3576,6 +3800,7 @@ def plot_smb_doy_cluster(mar_elev_bin_file, cluster_file, output_dir):
 
     print(f"Plot saved to {save_path}")
 
+
 def plot_combined_climatology_and_correlation(
     input_file_climatology,
     input_file_anomalies,
@@ -3594,7 +3819,7 @@ def plot_combined_climatology_and_correlation(
       - Left subplot: Climatology (mean temperature differences) heatmap with an overlaid plot
                       of smoothed snow fraction climatology.
       - Right subplot: Correlation heatmap between snow fraction anomalies and temperature difference anomalies.
-    
+
     Parameters:
       input_directory_climatology : Directory containing CSV files for the climatology plot.
       input_directory_anomalies    : Directory containing CSV files for the correlation plot.
@@ -3607,11 +3832,10 @@ def plot_combined_climatology_and_correlation(
       p_value_thresh               : P-value threshold for marking significance in the correlation plot.
     """
 
-
     # Create a figure with 2 subplots (left and right) sharing the y-axis.
     # Adjust the width ratios (here left=1.1 and right=0.9) as desired.
     fig, (ax1, ax2) = plt.subplots(
-        1, 2, sharey=True, figsize=(12, 5), gridspec_kw={'width_ratios': [1, 1]}
+        1, 2, sharey=True, figsize=(12, 5), gridspec_kw={"width_ratios": [1, 1]}
     )
 
     # function for gaussian smoothing
@@ -3623,35 +3847,52 @@ def plot_combined_climatology_and_correlation(
     # Left subplot: Climatology Plot
     # -------------------------------
     # Load snow fraction data for the overlay.
-    df_snow = pd.read_csv(snow_fraction_file, index_col="time", parse_dates=True, dayfirst=True)
+    df_snow = pd.read_csv(
+        snow_fraction_file, index_col="time", parse_dates=True, dayfirst=True
+    )
     df_snow.index = pd.to_datetime(df_snow.index)
     df_snow_summer = df_snow[df_snow.index.month.isin([6, 7, 8])]
     df_snow_summer["doy"] = df_snow_summer.index.dayofyear
     df_daily_mean = df_snow_summer.groupby("doy")["snow_fraction"].mean()
-    df_daily_mean_smoothed = df_daily_mean.rolling(window=smooth_window, center=True).mean()
+    df_daily_mean_smoothed = df_daily_mean.rolling(
+        window=smooth_window, center=True
+    ).mean()
 
     # Read climatology file.
-    df_clim = pd.read_csv(input_file_climatology, index_col=0, parse_dates=True, dayfirst=True)
+    df_clim = pd.read_csv(
+        input_file_climatology, index_col=0, parse_dates=True, dayfirst=True
+    )
     df_clim.index = pd.to_datetime(df_clim.index)
     df_summer = df_clim[df_clim.index.month.isin([6, 7, 8])]
     climatology = df_summer.groupby(df_summer.index.dayofyear).mean()
     climatology_smoothed = smooth_dataframe(climatology, sigma=correlation_filter_sigma)
 
     # Create meshgrid for pcolormesh.
-    X_left, Y_left = np.meshgrid(climatology_smoothed.index, climatology_smoothed.columns.astype(int))
+    X_left, Y_left = np.meshgrid(
+        climatology_smoothed.index, climatology_smoothed.columns.astype(int)
+    )
     Z_left = climatology_smoothed.values.T
 
     norm = TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)
-    c = ax1.pcolormesh(X_left, Y_left, Z_left, cmap="coolwarm", shading="auto", norm=norm)
+    c = ax1.pcolormesh(
+        X_left, Y_left, Z_left, cmap="coolwarm", shading="auto", norm=norm
+    )
 
-    cbar = plt.colorbar(c, ax=ax1, label="Temperature Difference (°C)", shrink=0.65, pad=0.11)
+    cbar = plt.colorbar(
+        c, ax=ax1, label="Temperature Difference (°C)", shrink=0.65, pad=0.11
+    )
     cbar.ax.tick_params(labelsize=12)
     cbar.ax.set_ylabel("Temperature Difference (°C)", fontsize=14)
 
     # Overlay the snow fraction on a twin axis.
     ax1_twin = ax1.twinx()
-    line_sf, = ax1_twin.plot(df_daily_mean.index, df_daily_mean_smoothed, color="darkgreen",
-                            label="Snow Fraction", linewidth=2)
+    (line_sf,) = ax1_twin.plot(
+        df_daily_mean.index,
+        df_daily_mean_smoothed,
+        color="darkgreen",
+        label="Snow Fraction",
+        linewidth=2,
+    )
     ax1_twin.set_ylabel("Snow Fraction", color="darkgreen", fontsize=14)
     ax1_twin.set_ylim(0, 1)
     ax1_twin.legend(handles=[line_sf], loc="upper right")
@@ -3669,31 +3910,43 @@ def plot_combined_climatology_and_correlation(
     snow_df = pd.read_csv(snow_fraction_file, parse_dates=["time"])
     snow_df["DOY"] = snow_df["time"].dt.day_of_year
     typical_snow_fraction = snow_df.groupby("DOY")["snow_fraction"].mean()
-    typical_snow_fraction_smoothed = sm.nonparametric.lowess(typical_snow_fraction,
-                                                            typical_snow_fraction.index, frac=0.1)
+    typical_snow_fraction_smoothed = sm.nonparametric.lowess(
+        typical_snow_fraction, typical_snow_fraction.index, frac=0.1
+    )
     typical_snow_fraction_smoothed = typical_snow_fraction_smoothed[:, 1]
-    typical_snow_fraction_df = pd.DataFrame({
-        "DOY": typical_snow_fraction.index,
-        "snow_fraction_typical": typical_snow_fraction_smoothed
-    })
+    typical_snow_fraction_df = pd.DataFrame(
+        {
+            "DOY": typical_snow_fraction.index,
+            "snow_fraction_typical": typical_snow_fraction_smoothed,
+        }
+    )
     snow_df = snow_df.merge(typical_snow_fraction_df, on="DOY", how="left")
     snow_df["anomaly"] = snow_df["snow_fraction"] - snow_df["snow_fraction_typical"]
 
-
     # Read anomalies file.
-    df_anom = pd.read_csv(input_file_anomalies, index_col=0, parse_dates=True, dayfirst=True)
+    df_anom = pd.read_csv(
+        input_file_anomalies, index_col=0, parse_dates=True, dayfirst=True
+    )
     df_anom.sort_index(inplace=True)
     df_anom["DOY"] = df_anom.index.day_of_year
-    snow_df_reindexed = snow_df.set_index("time").reindex(df_anom.index, fill_value=np.nan)
+    snow_df_reindexed = snow_df.set_index("time").reindex(
+        df_anom.index, fill_value=np.nan
+    )
     df_anom["snow_anomaly"] = snow_df_reindexed["anomaly"]
 
     min_doy = df_anom["DOY"].min()
     max_doy = df_anom["DOY"].max()
-    columns_to_correlate = [col for col in df_anom.columns if col not in ["DOY", "snow_anomaly"]]
+    columns_to_correlate = [
+        col for col in df_anom.columns if col not in ["DOY", "snow_anomaly"]
+    ]
 
     # Build dataframes for correlation coefficients and p-values.
-    correlation_results = pd.DataFrame(index=range(min_doy, max_doy + 1), columns=columns_to_correlate)
-    correlation_p = pd.DataFrame(index=range(min_doy, max_doy + 1), columns=columns_to_correlate)
+    correlation_results = pd.DataFrame(
+        index=range(min_doy, max_doy + 1), columns=columns_to_correlate
+    )
+    correlation_p = pd.DataFrame(
+        index=range(min_doy, max_doy + 1), columns=columns_to_correlate
+    )
 
     for doy, group in df_anom.groupby("DOY"):
         group = group.dropna(subset=["snow_anomaly"])
@@ -3704,7 +3957,9 @@ def plot_combined_climatology_and_correlation(
 
     correlation_results = correlation_results.astype(float)
     correlation_p = correlation_p.astype(float)
-    correlation_results_smoothed = smooth_dataframe(correlation_results, sigma=correlation_filter_sigma)
+    correlation_results_smoothed = smooth_dataframe(
+        correlation_results, sigma=correlation_filter_sigma
+    )
     correlation_p_smoothed = smooth_dataframe(correlation_p, sigma=p_value_sigma)
 
     # Plot the correlation heatmap.
@@ -3714,10 +3969,17 @@ def plot_combined_climatology_and_correlation(
         cmap="bwr",
         vmin=-1,
         vmax=1,
-        extent=[correlation_results.index.min(), correlation_results.index.max(), correlation_results.shape[1], 0],
+        extent=[
+            correlation_results.index.min(),
+            correlation_results.index.max(),
+            correlation_results.shape[1],
+            0,
+        ],
     )
     # Create the colorbar
-    cbar2 = plt.colorbar(im, ax=ax2, label="Correlation Coefficient", shrink=0.65, pad=0.12)
+    cbar2 = plt.colorbar(
+        im, ax=ax2, label="Correlation Coefficient", shrink=0.65, pad=0.12
+    )
 
     # Set the label size
     cbar2.ax.tick_params(labelsize=12)
@@ -3726,31 +3988,51 @@ def plot_combined_climatology_and_correlation(
     # Add the right-hand y-axis for altitude on the right subplot
     ax2_twin = ax2.twinx()
     ax2_twin.set_ylabel("Altitude Above Ground (m)", color="black", fontsize=14)
-    ax2_twin.set_ylim(0, ylim) # Ensure the y-axis limits match ax1
-    ax2_twin.set_yticks(np.arange(0, ylim + 1, step=ylim // 10)) # Match ticks with ax1
-
+    ax2_twin.set_ylim(0, ylim)  # Ensure the y-axis limits match ax1
+    ax2_twin.set_yticks(np.arange(0, ylim + 1, step=ylim // 10))  # Match ticks with ax1
 
     # Overlay a contourf with diagonal hatching on areas where p < threshold.
     mask = (correlation_p_smoothed < p_value_thresh).astype(float)
-    cf = ax2.contourf(X_left, Y_left, mask.T, levels=[0.5, 1.5], hatches=['///'], alpha=0)
-
+    cf = ax2.contourf(
+        X_left, Y_left, mask.T, levels=[0.5, 1.5], hatches=["///"], alpha=0
+    )
 
     # Add a legend entry for the hatched (significant) areas.
-    signif_patch = Patch(facecolor='none', hatch='///', edgecolor='yellow',
-                        label='Significant (p < {:.2f})'.format(p_value_thresh))
-    ax2.legend(handles=[signif_patch], loc='upper right')
-    
+    signif_patch = Patch(
+        facecolor="none",
+        hatch="///",
+        edgecolor="yellow",
+        label="Significant (p < {:.2f})".format(p_value_thresh),
+    )
+    ax2.legend(handles=[signif_patch], loc="upper right")
+
     ax2.set_xlabel("Day of Year (June-August)", fontsize=14)
     ax2.set_ylabel("")
-    ax2.axhline(y=100, color='grey', linestyle='--', linewidth=1.5, zorder=3)
-    
+    ax2.axhline(y=100, color="grey", linestyle="--", linewidth=1.5, zorder=3)
+
     if ylim:
         ax2.set_ylim(0, ylim)
 
-    ax1.text(-0.1, 1.05, '(a)', transform=ax1.transAxes,
-            fontsize=14, fontweight='bold', va='top', ha='right')
-    ax2.text(-0.02, 1.05, '(b)', transform=ax2.transAxes,
-            fontsize=14, fontweight='bold', va='top', ha='right')
+    ax1.text(
+        -0.1,
+        1.05,
+        "(a)",
+        transform=ax1.transAxes,
+        fontsize=14,
+        fontweight="bold",
+        va="top",
+        ha="right",
+    )
+    ax2.text(
+        -0.02,
+        1.05,
+        "(b)",
+        transform=ax2.transAxes,
+        fontsize=14,
+        fontweight="bold",
+        va="top",
+        ha="right",
+    )
     ax2.grid(True)
     # tight layout
     plt.tight_layout()
@@ -3760,11 +4042,10 @@ def plot_combined_climatology_and_correlation(
     os.makedirs(output_dir, exist_ok=True)
     save_path_png = os.path.join(output_dir, "combined_climatology_correlation.png")
     save_path_pdf = os.path.join(output_dir, "combined_climatology_correlation.pdf")
-    plt.savefig(save_path_png, bbox_inches="tight", dpi = 300)
-    plt.savefig(save_path_pdf, bbox_inches="tight", dpi = 300)
+    plt.savefig(save_path_png, bbox_inches="tight", dpi=300)
+    plt.savefig(save_path_pdf, bbox_inches="tight", dpi=300)
     print(f"Plot saved to {save_path_png}")
     plt.close()
-
 
 
 def plot_combined_synoptic_and_occurrences(
@@ -3778,11 +4059,7 @@ def plot_combined_synoptic_and_occurrences(
     """
     Combines two figures into one canvas with two rows.
 
-    Top row: Mean anomalies per cluster (one row, 5 columns) using a PlateCarree projection.
-             The map extent is set to the data region so that areas outside are white.
-             The annotation box now shows two lines: one for the number of occurrences,
-             and a second line indicating that the contours represent the 500 hPa GPH anomaly (m).
-
+    Top row: Mean anomalies per cluster (one row, 5 columns).
     Bottom row: Three subplots for cluster occurrence metrics (normalized daily, annual, and a single stacked bar plot)
     """
     # ---------------------------
@@ -3792,12 +4069,12 @@ def plot_combined_synoptic_and_occurrences(
     clusters_df = pd.read_csv(clusters_df_path)
     clusters_df["Date"] = pd.to_datetime(clusters_df["Date"])
     clusters_df["Date"] = clusters_df["Date"].dt.strftime("%Y-%m-%dT12:00:00")
-    
+
     # Start counting Clusters at 1
     # Load anomaly dataset and convert valid_time to string
     ds = xr.open_dataset(anomaly_file_path)
     ds["valid_time"] = ds["valid_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
-    
+
     # Merge K-means results with the anomaly dataset based on valid_time/Date
     merged_data = pd.DataFrame({"valid_time": ds["valid_time"].values}).merge(
         clusters_df,
@@ -3805,23 +4082,23 @@ def plot_combined_synoptic_and_occurrences(
         left_on="valid_time",
         right_on="Date",
     )
-    
+
     # Assign clusters as a new coordinate in the dataset
     ds = ds.assign_coords(
         cluster=("valid_time", merged_data["Cluster"].fillna(-1).values)
     )
-    
+
     # Determine valid clusters (assumed to be 5 clusters)
     valid_clusters = np.sort(merged_data["Cluster"].dropna().unique())
     cluster_counts = merged_data["Cluster"].value_counts()
-    
+
     # Compute the data extent (longitude and latitude bounds) from the dataset
     lon_min = float(ds.longitude.min())
     lon_max = float(ds.longitude.max())
     lat_min = float(ds.latitude.min())
     lat_max = float(ds.latitude.max())
     data_extent = [lon_min, lon_max, lat_min, lat_max]
-    
+
     # ---------------------------
     # Bottom Row: Cluster Occurrence Plots
     # ---------------------------
@@ -3839,20 +4116,20 @@ def plot_combined_synoptic_and_occurrences(
     )
     day_of_year_counts = clusters_occ.groupby("DayOfYear").size()
     normalized_daily_occurrences = daily_occurrences.div(day_of_year_counts, axis=0)
-    
+
     # Annual occurrences per cluster
     clusters_occ["Year"] = clusters_occ.index.year
     annual_occurrences = (
         clusters_occ.groupby(["Year", "Cluster"]).size().unstack(fill_value=0)
     )
-    
+
     # Load profile time data for the single stacked bar plot
     profile_times_df = pd.read_csv(profile_times_path)
     profile_times_df["Time"] = pd.to_datetime(profile_times_df["Time"])
     profile_times_df["Date"] = profile_times_df["Time"].dt.date
     unique_dates = profile_times_df["Date"].unique()
     unique_dates_df = pd.DataFrame(unique_dates, columns=["Date"])
-    
+
     # Merge clusters with profile times (only on field days)
     clusters_occ.index = pd.to_datetime(clusters_occ.index).date
     merged_occ_df = pd.merge(
@@ -3864,32 +4141,34 @@ def plot_combined_synoptic_and_occurrences(
     cluster_ratios_df = pd.DataFrame(cluster_ratios).T
     sorted_columns = sorted(cluster_ratios_df.columns)
     cluster_ratios_df = cluster_ratios_df.reindex(columns=sorted_columns)
-    
+
     # Define a consistent color palette for the clusters (assumes clusters are numeric)
     unique_clusters = sorted(clusters_occ["Cluster"].unique())
     palette = sns.color_palette(n_colors=len(unique_clusters))
-    cluster_palette = {cluster: color for cluster, color in zip(unique_clusters, palette)}
-    
+    cluster_palette = {
+        cluster: color for cluster, color in zip(unique_clusters, palette)
+    }
+
     # ---------------------------
     # Create the Combined Figure with Two Rows
     # ---------------------------
     # Create a figure and a GridSpec with 2 rows.
     fig = plt.figure(figsize=(10, 6))
     outer_gs = fig.add_gridspec(2, 1, height_ratios=[1, 1], hspace=0.2)
-    
+
     # --- Top row: 5 columns for anomalies per cluster ---
     gs_top = outer_gs[0].subgridspec(1, 5, wspace=0.2)
-    
+
     # Loop over each valid cluster to create an anomalies map
     im = None  # To capture the last image for the shared colorbar
     for i, cluster_id in enumerate(valid_clusters):
         # Use PlateCarree for the map projection
         ax = fig.add_subplot(gs_top[0, i], projection=ccrs.PlateCarree())
-        
+
         # Restrict the map to your data region and set a white background
         ax.set_extent(data_extent, crs=ccrs.PlateCarree())
         ax.set_facecolor("white")
-        
+
         # Calculate the mean anomalies for the given cluster
         t_anomaly = (
             ds["t_anomaly"].where(ds["cluster"] == cluster_id).mean(dim="valid_time")
@@ -3897,7 +4176,7 @@ def plot_combined_synoptic_and_occurrences(
         z_anomaly = (
             ds["z_anomaly"].where(ds["cluster"] == cluster_id).mean(dim="valid_time")
         )
-        
+
         # Plot temperature anomaly with PlateCarree transform (data are in lat/lon)
         im = t_anomaly.plot(
             ax=ax,
@@ -3908,21 +4187,22 @@ def plot_combined_synoptic_and_occurrences(
             add_colorbar=False,
         )
         ax.set_aspect("auto")
-        
+
         # Add geographic features only within the data extent
         ax.coastlines()
         ax.add_feature(cfeature.BORDERS)
         ax.add_feature(cfeature.LAND, edgecolor="black")
-        
+
         # Add gridlines; disable labels on inner panels for clarity
-        gl = ax.gridlines(draw_labels=True, linewidth=0.5, color="gray", alpha=0.6, linestyle="--")
+        gl = ax.gridlines(
+            draw_labels=True, linewidth=0.5, color="gray", alpha=0.6, linestyle="--"
+        )
         gl.top_labels = False
         gl.buttom_labels = True
         gl.right_labels = False
         if i != 0:
             gl.left_labels = False
-            
-        
+
         # Contour geopotential height anomaly
         z_min = np.floor(z_anomaly.min().values / 5) * 5
         z_max = np.ceil(z_anomaly.max().values / 5) * 5 + 5
@@ -3938,8 +4218,8 @@ def plot_combined_synoptic_and_occurrences(
             # only solid lines
             linestyles="solid",
         )
-        ax.clabel(contours, inline=True, fontsize=9, fmt="%1.0f", zorder = 2)
-        
+        ax.clabel(contours, inline=True, fontsize=9, fmt="%1.0f", zorder=2)
+
         # Mark a specific coordinate (e.g., VRS)
         longitude = -16.636666666666667
         latitude = 81.59916666666666
@@ -3951,7 +4231,7 @@ def plot_combined_synoptic_and_occurrences(
             markersize=8,
             transform=ccrs.PlateCarree(),
         )
-        
+
         # custom annotations VRS
         if i == 2 or i == 3:
             ax.text(
@@ -3975,30 +4255,45 @@ def plot_combined_synoptic_and_occurrences(
                 verticalalignment="bottom",
                 horizontalalignment="left",
             )
-        
 
         count = cluster_counts.get(cluster_id, 0)
         # Annotation with both the count and GpH anomaly line
         annotation = f"n = {count}"
         ax.text(
-            0.98, 0.985,  # top-right corner
+            0.98,
+            0.985,  # top-right corner
             annotation,
             transform=ax.transAxes,
             fontsize=11,
             color="black",
             ha="right",
             va="top",
-            bbox=dict(facecolor="white", edgecolor="black", alpha=1, boxstyle="round,pad=0.2"),
+            bbox=dict(
+                facecolor="white", edgecolor="black", alpha=1, boxstyle="round,pad=0.2"
+            ),
+        )
+        # Define a dictionary to map cluster IDs to their descriptions
+        cluster_descriptions = {
+            1: "Low Pressure",
+            2: "Zonal",
+            3: "High Pressure",
+            4: "Strong Zonal",
+            5: "Strong High Pressure",
+        }
+        description = cluster_descriptions.get(cluster_id, "")
+
+        ax.set_title(
+            f"CL{int(cluster_id)}\n'{description}'",
+            fontsize=12,
+            fontweight="bold",
+            color=cluster_palette.get(cluster_id, "black"),
         )
 
-        
-        # Use modulo to cycle through colors if there are more clusters than colors
-        ax.set_title(f"Cluster {int(cluster_id)}", fontsize=12, fontweight="bold",  color=cluster_palette.get(cluster_id, "black"))
-                
         # Add bold 'a' to the upper-left of the first-row subplots
         if i == 0:  # Assuming 5 subplots per row
             ax.text(
-                -0.1, 1.1,  # Slightly outside the top-left corner
+                -0.15,
+                1.1,  # Slightly outside the top-left corner
                 "(a)",
                 transform=ax.transAxes,
                 fontsize=14,
@@ -4006,29 +4301,56 @@ def plot_combined_synoptic_and_occurrences(
                 ha="left",
                 va="center",
             )
+
     # Add a shared vertical colorbar for the anomalies maps.
-    cbar_ax = fig.add_axes([0.91, 0.53, 0.015, 0.35])  
+    cbar_ax = fig.add_axes([0.91, 0.53, 0.015, 0.35])
     cbar = fig.colorbar(
         im, cax=cbar_ax, orientation="vertical", label="850 hPa Temp. Anomaly (°C)"
     )
     cbar.ax.tick_params(labelsize=10)
     cbar.set_label("850 hPa Temp. Anomaly (°C)", fontsize=10)
-    
+
     # --- Bottom row: Occurrence Plots (3 panels) ---
     # Reduce the horizontal spacing since we no longer need room for y-axis labels.
     gs_bot = outer_gs[1].subgridspec(1, 7, wspace=0.3)  # Reduced from 0.9 to 0.1
     ax_norm = fig.add_subplot(gs_bot[0, :3])
-    ax_ann  = fig.add_subplot(gs_bot[0, 3:6], sharey=ax_norm)  # share y-axis with ax_norm
-    ax_bar  = fig.add_subplot(gs_bot[0, 6:], sharey=ax_norm)    # share y-axis with ax_norm
+    ax_ann = fig.add_subplot(
+        gs_bot[0, 3:6], sharey=ax_norm
+    )  # share y-axis with ax_norm
+    ax_bar = fig.add_subplot(gs_bot[0, 6:], sharey=ax_norm)  # share y-axis with ax_norm
 
     # Add bold subplot labels "b", "c", and "d" above the three occurrence plots.
-    ax_norm.text(-0.03, 1.1, "(b)", transform=ax_norm.transAxes,
-                fontsize=14, fontweight="bold", va="top", ha="left")
-    ax_ann.text(-0.03, 1.1, "(c)", transform=ax_ann.transAxes,
-                fontsize=14, fontweight="bold", va="top", ha="left")
-    ax_bar.text(-0.035, 1.1, "(d)", transform=ax_bar.transAxes,
-                fontsize=14, fontweight="bold", va="top", ha="left")
-    
+    ax_norm.text(
+        -0.032,
+        1.1,
+        "(b)",
+        transform=ax_norm.transAxes,
+        fontsize=14,
+        fontweight="bold",
+        va="top",
+        ha="left",
+    )
+    ax_ann.text(
+        -0.03,
+        1.1,
+        "(c)",
+        transform=ax_ann.transAxes,
+        fontsize=14,
+        fontweight="bold",
+        va="top",
+        ha="left",
+    )
+    ax_bar.text(
+        -0.035,
+        1.1,
+        "(d)",
+        transform=ax_bar.transAxes,
+        fontsize=14,
+        fontweight="bold",
+        va="top",
+        ha="left",
+    )
+
     # Plot 1: Normalized Cluster Occurrences Per Day of Year
     normalized_daily_occurrences.plot(
         kind="bar",
@@ -4046,24 +4368,37 @@ def plot_combined_synoptic_and_occurrences(
     annual_occurrences_relative = annual_occurrences / 92
 
     # Average the cluster counts for first and second halve of period
-    
-    first_half_abs = annual_occurrences.loc[annual_occurrences.index < 2008].mean().round(2)
-    second_half_abs = annual_occurrences.loc[annual_occurrences.index >= 2008].mean().round(2)
 
-    first_halve_rel = annual_occurrences_relative.loc[annual_occurrences_relative.index < 2008].mean().round(2)
-    second_halve_rel = annual_occurrences_relative.loc[annual_occurrences_relative.index >= 2008].mean().round(2)
+    first_half_abs = (
+        annual_occurrences.loc[annual_occurrences.index < 2008].mean().round(2)
+    )
+    second_half_abs = (
+        annual_occurrences.loc[annual_occurrences.index >= 2008].mean().round(2)
+    )
+
+    first_halve_rel = (
+        annual_occurrences_relative.loc[annual_occurrences_relative.index < 2008]
+        .mean()
+        .round(2)
+    )
+    second_halve_rel = (
+        annual_occurrences_relative.loc[annual_occurrences_relative.index >= 2008]
+        .mean()
+        .round(2)
+    )
 
     # writing average clusters to dataframe
-    average_clusters = pd.DataFrame({
-        "1991-2007 Abs": first_half_abs,
-        "2008-2024 Abs": second_half_abs,
-        "1991-2007 Rel": first_halve_rel,
-        "2008-2024 Rel": second_halve_rel
-    }).T
-    
+    average_clusters = pd.DataFrame(
+        {
+            "1991-2007 Abs": first_half_abs,
+            "2008-2024 Abs": second_half_abs,
+            "1991-2007 Rel": first_halve_rel,
+            "2008-2024 Rel": second_halve_rel,
+        }
+    ).T
+
     # save average clusters to html table
     average_clusters.to_html("results\\k_means\\cluster_occurence_over_time.html")
-
 
     # Plot 2: Annual Cluster Occurrence (Relative)
     annual_occurrences_relative.plot(
@@ -4106,16 +4441,16 @@ def plot_combined_synoptic_and_occurrences(
         bottom_val += ratio
     ax_bar.set_xlabel("Clusters on\nField Days", fontsize=10)
     ax_bar.set_xticklabels([])
-    
+
     # Remove the redundant y-axis label on ax_bar since y-axis is shared.
     ax_bar.set_ylabel("")
 
     # (Optionally) adjust the y-axis limits so that all values are between 0 and 1.
     ax_norm.set_ylim(0, 1)
-    
+
     # Create a combined legend using handles from one of the occurrence plots
     handles, labels = ax_norm.get_legend_handles_labels()
-    labels = [f"Cluster {label}" for label in labels]
+    labels = [f"CL{label}" for label in labels]
     ax_norm.get_legend().remove()
     ax_ann.get_legend().remove()
     ax_bar.get_legend().remove()
@@ -4128,9 +4463,9 @@ def plot_combined_synoptic_and_occurrences(
         fontsize=11,
         frameon=False,
     )
-    
+
     plt.tight_layout(rect=[0, 0.05, 0.9, 0.95])
-    
+
     # Ensure the output directory exists and save the figure
     os.makedirs(output_path, exist_ok=True)
     output_file_png = os.path.join(output_path, "combined_synoptic_and_occurrences.png")
@@ -4141,9 +4476,11 @@ def plot_combined_synoptic_and_occurrences(
     print(f"Combined plot saved to {output_file_png}")
 
 
-def plot_smb_cluster_elevation(df_mar_cluster_merged, df_mar_elev, cluster_file, output_dir):
+def plot_smb_cluster_elevation(
+    df_mar_cluster_merged, df_mar_elev, cluster_file, output_dir
+):
     """
-    plots Daily Mean SMB per cluster over DOY left and Mean SMB over elevation per cluster right. 
+    plots Daily Mean SMB per cluster over DOY left and Mean SMB over elevation per cluster right.
     Parameters:
     - df_mar_cluster_merged (str): Path to the CSV file containing the merged MAR cluster data.
     - df_mar_elev (str): Path to the CSV file containing the MAR elevation bins data.
@@ -4169,42 +4506,46 @@ def plot_smb_cluster_elevation(df_mar_cluster_merged, df_mar_elev, cluster_file,
     df_cluster["Date"] = pd.to_datetime(df_cluster["Date"])
 
     # Merge data and compute necessary metrics
-    merged_df = df_mar.merge(df_cluster, left_on="Time", right_on="Date", how="inner").drop(columns=["Date"])
+    merged_df = df_mar.merge(
+        df_cluster, left_on="Time", right_on="Date", how="inner"
+    ).drop(columns=["Date"])
     merged_df["DOY"] = merged_df["Time"].dt.day_of_year
-    df_cluster_grouped = merged_df.groupby(["Cluster", "Mean_Elevation"])["SMB"].mean().reset_index()
+    df_cluster_grouped = (
+        merged_df.groupby(["Cluster", "Mean_Elevation"])["SMB"].mean().reset_index()
+    )
 
     def custom_rolling_mean(series, full_window, min_points):
         """
         Compute a custom rolling mean with a flexible window size.
-        
+
         For indices where a full centered window (of length `full_window`) is available,
         that full window is used.
-        
+
         For indices near the edges where a full window is not available, a fallback window is used.
         If the number of data points in the fallback window is less than `min_points`,
         the output for that index is set to np.nan.
-        
+
         For example, with min_points=3:
         - At index 0, if less than 3 data points are available, np.nan is returned.
         - At index 1, only indices 0–2 (3 points) are averaged (if exactly 3 are available).
-        
+
         Parameters:
         series (array-like): 1D data (e.g. a Pandas Series or numpy array)
         full_window (int): Desired window size for the center of the data (should be odd)
         min_points (int): Minimum number of points required for smoothing at an index.
-        
+
         Returns:
         np.ndarray: The smoothed data (with np.nan where not enough data is available).
         """
         arr = np.asarray(series)
         n = len(arr)
-        
+
         # Pre-allocate output.
         smoothed = np.empty(n)
-        
+
         # Calculate half window size (integer division)
         half = full_window // 2  # e.g., if full_window=25, half=12
-        
+
         for i in range(n):
             # For indices where a full window is available:
             if i >= half and i < n - half:
@@ -4215,17 +4556,19 @@ def plot_smb_cluster_elevation(df_mar_cluster_merged, df_mar_elev, cluster_file,
             # For indices near the end:
             else:  # i >= n - half
                 window_data = arr[n - (2 * (n - i) - 1) : n]
-            
+
             # Only compute the average if we have at least `min_points` data points.
             if len(window_data) < min_points:
                 smoothed[i] = np.nan
             else:
                 smoothed[i] = np.mean(window_data)
-        
+
         return smoothed
 
     # Create a combined figure
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 5), gridspec_kw={"width_ratios": [1, 1]}, sharey=False)
+    fig, (ax1, ax2) = plt.subplots(
+        1, 2, figsize=(8, 5), gridspec_kw={"width_ratios": [1, 1]}, sharey=False
+    )
 
     # Plot Left: Daily Mean SMB per Cluster
     for cluster in daily_means.columns:
@@ -4234,28 +4577,59 @@ def plot_smb_cluster_elevation(df_mar_cluster_merged, df_mar_elev, cluster_file,
         valid_mask = ~y.isna()
         x_valid, y_valid = x[valid_mask], y[valid_mask]
         y_smoothed = custom_rolling_mean(y_valid, full_window=25, min_points=5)
-        ax1.plot(x_valid, y_smoothed, label=f"Cluster {cluster}", linewidth=2)
+        ax1.plot(x_valid, y_smoothed, label=f"CL{cluster}", linewidth=2)
         ax1.scatter(x, y, marker="o", s=18, alpha=0.6)
     ax1.set_xlabel("Day of Year (June-August)")
     ax1.set_ylabel("Mean Specific SMB (mm w.e.)")
     ax1.grid(True)
 
-
     # Plot Right: Mean SMB per Cluster vs Elevation
     for cluster, data in df_cluster_grouped.groupby("Cluster"):
-        ax2.plot(data["Mean_Elevation"], data["SMB"], label=f"Cluster {cluster}", marker="o", linewidth=2)
+        ax2.plot(
+            data["Mean_Elevation"],
+            data["SMB"],
+            label=f"CL{cluster}",
+            marker="o",
+            linewidth=2,
+        )
     ax2.set_xlabel("Elevation (m)")
     ax2.set_ylabel("Mean Specific SMB (mm w.e.)")
     ax2.grid(True)
 
     # Add bold 'b' above the right plot
-    ax2.text(-0.05, 1.03, '(b)', transform=ax2.transAxes, fontsize=14, fontweight='bold', va='center', ha='center')
+    ax2.text(
+        -0.05,
+        1.03,
+        "(b)",
+        transform=ax2.transAxes,
+        fontsize=14,
+        fontweight="bold",
+        va="center",
+        ha="center",
+    )
     # Add bold 'a' above the left plot
-    ax1.text(-0.05, 1.03, '(a)', transform=ax1.transAxes, fontsize=14, fontweight='bold', va='center', ha='center')
+    ax1.text(
+        -0.05,
+        1.03,
+        "(a)",
+        transform=ax1.transAxes,
+        fontsize=14,
+        fontweight="bold",
+        va="center",
+        ha="center",
+    )
 
     # Create a common legend below the plots
     handles, labels = ax1.get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", ncol=len(labels), fontsize=11, frameon=False, bbox_to_anchor=(0.5, 0.0))
+    fig.legend(
+        handles,
+        labels,
+        loc="lower center",
+        ncol=len(labels),
+        fontsize=11,
+        frameon=False,
+        bbox_to_anchor=(0.5, 0.0),
+    )
 
     # Adjust layout and save the figure
     plt.tight_layout(rect=[0, 0.05, 1, 1])  # Leave space for the legend
@@ -4269,10 +4643,12 @@ def plot_smb_cluster_elevation(df_mar_cluster_merged, df_mar_elev, cluster_file,
     print(f"Combined plot saved to {save_path_pdf}")
 
 
-def plot_smb_vs_ela(input_file, output_dir_df, output_dir_plot, smoothing=False, frac=0.45):
+def plot_smb_vs_ela(
+    input_file, output_dir_df, output_dir_plot, smoothing=False, frac=0.45
+):
     """
     Reads the MAR SMB data, computes ELA and JJA temperature anomalies, and plots SMB vs ELA color coded by temperature anomaly.
-    
+
     Parameters:
         input_file (str): Path to the input CSV file.
         output_dir_df (str): Directory where the processed dataframe will be saved.
@@ -4280,46 +4656,46 @@ def plot_smb_vs_ela(input_file, output_dir_df, output_dir_plot, smoothing=False,
         smoothing (bool): If True, adds a LOWESS smoothing line to the scatter plot.
         frac (float): The fraction of data used when computing LOWESS smoothing.
     """
-    
+
     # Ensure output directories exist
     os.makedirs(output_dir_df, exist_ok=True)
     os.makedirs(output_dir_plot, exist_ok=True)
-    
+
     # Load data
     df = pd.read_csv(input_file)
-    
+
     # Convert 'Time' column to datetime
     df["Time"] = pd.to_datetime(df["Time"])
-    
+
     # Extract year from 'Time'
-    df['Year'] = df["Time"].dt.year.astype(int)
-    
+    df["Year"] = df["Time"].dt.year.astype(int)
+
     # Filter for summer months (June, July, August)
-    summer_df = df[df['Time'].dt.month.isin([6, 7, 8])]
-    
+    summer_df = df[df["Time"].dt.month.isin([6, 7, 8])]
+
     # Group by 'Year' and calculate the mean temperature for summer months
-    yearly_summer_temp = summer_df.groupby('Year')['Temp'].mean()
-    
+    yearly_summer_temp = summer_df.groupby("Year")["Temp"].mean()
+
     # Calculate the baseline climatology for the period 1991-2020
     baseline = yearly_summer_temp.loc[1991:2020].mean()
-    
+
     # Compute the temperature anomaly for each year relative to the baseline
     yearly_temp_anomaly = yearly_summer_temp - baseline
-    
+
     # Create a new column that represents the absolute SMB contribution (in mm·km²)
     df["SMB_abs_mm_km2"] = df["SMB"] * df["Total_Area_km2"]
-    
+
     # Group by Year and elevation bin to aggregate the data
     df_grouped = (
         df.groupby(["Year", "elev_bin"])
         .agg(
-            SMB_abs = ("SMB_abs_mm_km2", "sum"),   # Sum of SMB contributions for the bin
-            Total_Area_km2 = ("Total_Area_km2", "sum"),  # Sum of areas for the bin
-            Mean_Elevation = ("Mean_Elevation", "mean"),  # Mean elevation of the bin
+            SMB_abs=("SMB_abs_mm_km2", "sum"),  # Sum of SMB contributions for the bin
+            Total_Area_km2=("Total_Area_km2", "sum"),  # Sum of areas for the bin
+            Mean_Elevation=("Mean_Elevation", "mean"),  # Mean elevation of the bin
         )
         .reset_index()
     )
-    
+
     # Convert the absolute SMB from mm·km² to Gigatonnes (Gt)
     df_grouped["SMB_abs_Gt"] = df_grouped["SMB_abs"] * 1e-6
 
@@ -4341,27 +4717,35 @@ def plot_smb_vs_ela(input_file, output_dir_df, output_dir_plot, smoothing=False,
                     elev_crossing = x1 + (x2 - x1) * (0 - y1) / (y2 - y1)
                     crossings.append(elev_crossing)
             # Calculate the overall absolute SMB for the year (in Gt)
-            abs_SMB = group['SMB_abs_Gt'].sum()
+            abs_SMB = group["SMB_abs_Gt"].sum()
             if crossings:
-                zero_crossings.append({"Year": year, "ELA": min(crossings), "SMB": abs_SMB})
+                zero_crossings.append(
+                    {"Year": year, "ELA": min(crossings), "SMB": abs_SMB}
+                )
             else:
                 zero_crossings.append({"Year": year, "ELA": 925, "SMB": abs_SMB})
         return pd.DataFrame(zero_crossings)
-    
+
     zero_crossing_df = find_smb_zero_crossing(df_grouped)
     zero_crossing_df["t_anom"] = zero_crossing_df["Year"].map(yearly_temp_anomaly)
-    
+
     # Calculate Accumulation Area Ratio (AAR)
     aar_all = []
     for i, row in zero_crossing_df.iterrows():
-        ela = row['ELA']
-        yearly = df_grouped[df_grouped['Year'] == row['Year']]
-        accumulation_area = yearly[yearly['Mean_Elevation'] > ela]['Total_Area_km2'].sum()
-        ablation_area = yearly[yearly['Mean_Elevation'] < ela]['Total_Area_km2'].sum()
-        aar = accumulation_area / (accumulation_area + ablation_area) if (accumulation_area + ablation_area) else 0
+        ela = row["ELA"]
+        yearly = df_grouped[df_grouped["Year"] == row["Year"]]
+        accumulation_area = yearly[yearly["Mean_Elevation"] > ela][
+            "Total_Area_km2"
+        ].sum()
+        ablation_area = yearly[yearly["Mean_Elevation"] < ela]["Total_Area_km2"].sum()
+        aar = (
+            accumulation_area / (accumulation_area + ablation_area)
+            if (accumulation_area + ablation_area)
+            else 0
+        )
         aar_all.append(aar)
-    zero_crossing_df['AAR'] = aar_all
-    
+    zero_crossing_df["AAR"] = aar_all
+
     # Save the processed dataframe
     df_path = os.path.join(output_dir_df, "ela_smb_df.csv")
     zero_crossing_df.to_csv(df_path, index=False)
@@ -4370,57 +4754,64 @@ def plot_smb_vs_ela(input_file, output_dir_df, output_dir_plot, smoothing=False,
     # path to zero_crossing_df: data\mar_smb_1991_2024_FI\ela_smb_df.csv
     # Create the figure and axis
     fig, ax = plt.subplots(figsize=(8, 6))
-    
+
     # Determine the symmetric color limits so that 0°C is centered
     vlim = np.max(np.abs(zero_crossing_df["t_anom"]))
     vmin, vmax = -vlim, vlim
-    
+
     # Create the scatter plot (SMB vs ELA)
     sc = ax.scatter(
-        zero_crossing_df["SMB"], zero_crossing_df["ELA"],
+        zero_crossing_df["SMB"],
+        zero_crossing_df["ELA"],
         c=zero_crossing_df["t_anom"],
-        cmap="coolwarm",   # blue for cold, red for warm
+        cmap="coolwarm",  # blue for cold, red for warm
         vmin=vmin,
         vmax=vmax,
-        edgecolor="k",     # adds a black border around markers
-        s=100              # adjust marker size as needed
+        edgecolor="k",  # adds a black border around markers
+        s=100,  # adjust marker size as needed
     )
-    
+
     # Label the axes and add grid
     ax.set_xlabel("Annual SMB (Gt)")
     ax.set_ylabel("ELA (m)")
     ax.grid(True)
-    
+
     # Add a colorbar
     cbar = plt.colorbar(sc, ax=ax)
     cbar.set_label("JJA Temperature Anomaly (°C)")
-    
+
     # Add LOWESS smoothing if desired
     if smoothing:
         x = zero_crossing_df["SMB"].values
         y = zero_crossing_df["ELA"].values
         smoothed = sm.nonparametric.lowess(y, x, frac=frac)
-        ax.plot(smoothed[:, 0], smoothed[:, 1], color='green', linestyle='-', linewidth=2, label='LOWESS Smoothing')
+        ax.plot(
+            smoothed[:, 0],
+            smoothed[:, 1],
+            color="green",
+            linestyle="-",
+            linewidth=2,
+            label="LOWESS Smoothing",
+        )
         ax.legend()
-    
+
     # Save the plot
     plot_path = os.path.join(output_dir_plot, "smb_vs_ela.png")
     plt.savefig(plot_path, dpi=300, bbox_inches="tight")
     print(f"Plot saved to {plot_path}")
 
 
-
 def plot_smb_time_and_hyps(file_path_smb, file_path_elev, file_path_zero, output_dir):
     """
     Combines four separate plots into one figure arranged in two columns and two rows.
-    
+
     Left column (nested vertically):
       - Top: Winter/Summer SMB plot (stacked seasonal bars and annual bars)
       - Bottom: Cumulative SMB plot
     Right column:
       - Top: Hypsometric plot (SMB vs. Elevation)
       - Bottom: Zero-crossing plot (scatter plot with ELA on x-axis and SMB on y-axis)
-    
+
     Parameters:
       file_path_smb (str): CSV file for seasonal SMB data (for winter/summer and cumulative plots).
       file_path_elev (str): CSV file for hypsometric data (SMB vs. Elevation).
@@ -4431,7 +4822,7 @@ def plot_smb_time_and_hyps(file_path_smb, file_path_elev, file_path_zero, output
     """
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
-    
+
     ##########################
     # LEFT COLUMN: First Function Plots (Seasonal SMB and Cumulative SMB)
     ##########################
@@ -4442,7 +4833,7 @@ def plot_smb_time_and_hyps(file_path_smb, file_path_elev, file_path_zero, output
     start_date = "1991-09-01"
     end_date = "2024-08-31"
     smb_df = smb_df[(smb_df["Time"] >= start_date) & (smb_df["Time"] <= end_date)]
-    
+
     # Add Year and Month columns
     smb_df["Year"] = smb_df["Time"].dt.year
     smb_df["Month"] = smb_df["Time"].dt.month
@@ -4450,8 +4841,10 @@ def plot_smb_time_and_hyps(file_path_smb, file_path_elev, file_path_zero, output
     smb_df["HydroYear"] = smb_df["Year"]
     smb_df.loc[smb_df["Month"] >= 9, "HydroYear"] += 1
     # Define Season column: Summer for June-Aug, else Winter.
-    smb_df["Season"] = smb_df["Month"].apply(lambda x: "Summer" if x in [6, 7, 8] else "Winter")
-    
+    smb_df["Season"] = smb_df["Month"].apply(
+        lambda x: "Summer" if x in [6, 7, 8] else "Winter"
+    )
+
     # Group by Hydrological Year and Season, summing Specific Mass Balance (in mm WE)
     seasonal_sums = (
         smb_df.groupby(["HydroYear", "Season"])["Specific Mass Balance (mm WE)"]
@@ -4459,18 +4852,18 @@ def plot_smb_time_and_hyps(file_path_smb, file_path_elev, file_path_zero, output
         .unstack(fill_value=0)
     )
     seasonal_sums["Total"] = seasonal_sums.sum(axis=1)
-    
+
     # Compute SMB (Gt) and cumulative SMB (Gt)
     smb_df["SMB (Gt)"] = smb_df["SMB (m^3)"] / 1e9
     yearly_smb_gt = smb_df.groupby("HydroYear")["SMB (Gt)"].sum()
     cumulative_smb_gt = yearly_smb_gt.cumsum()
-    
+
     # Prepare data for plotting (convert mm to m for seasonal sums)
     hydro_years = seasonal_sums.index
     summer = seasonal_sums["Summer"] / 1000  # m we
     winter = seasonal_sums["Winter"] / 1000  # m we
-    total = seasonal_sums["Total"] / 1000      # m we
-    
+    total = seasonal_sums["Total"] / 1000  # m we
+
     ##########################
     # RIGHT TOP: Second Function Plot (Hypsometric plot)
     ##########################
@@ -4480,17 +4873,21 @@ def plot_smb_time_and_hyps(file_path_smb, file_path_elev, file_path_zero, output
     # Create Year_Bin using the defined bins:
     bins_elev = [1990, 2002, 2013, 2024]
     labels_elev = [1991, 2003, 2014]
-    df_elev["Year_Bin"] = pd.cut(df_elev["Time"].dt.year, bins=bins_elev, labels=labels_elev, right=True)
+    df_elev["Year_Bin"] = pd.cut(
+        df_elev["Time"].dt.year, bins=bins_elev, labels=labels_elev, right=True
+    )
     df_elev["Year_Bin"] = df_elev["Year_Bin"].astype(int)
-    
+
     # Group by Year_Bin and elev_bin, and aggregate
     df_elev_grouped = (
         df_elev.groupby(["Year_Bin", "elev_bin"])
-        .agg({
-            "SMB": "sum",
-            "Total_Area_km2": "mean",
-            "Mean_Elevation": "mean",
-        })
+        .agg(
+            {
+                "SMB": "sum",
+                "Total_Area_km2": "mean",
+                "Mean_Elevation": "mean",
+            }
+        )
         .reset_index()
     )
     # Normalize SMB per year (using a provided dictionary of years in each bin)
@@ -4500,11 +4897,18 @@ def plot_smb_time_and_hyps(file_path_smb, file_path_elev, file_path_zero, output
     )
     # Define manual elevation bins and assign bar midpoints/widths
     elevation_bins = [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
-    midpoints = [(elevation_bins[i] + elevation_bins[i+1]) / 2 for i in range(len(elevation_bins)-1)]
+    midpoints = [
+        (elevation_bins[i] + elevation_bins[i + 1]) / 2
+        for i in range(len(elevation_bins) - 1)
+    ]
     widths = np.diff(elevation_bins)
     elev_bin_to_midpoint = {i: midpoints[i] for i in range(len(midpoints))}
-    df_elev_grouped["Bar_Center"] = df_elev_grouped["elev_bin"].map(elev_bin_to_midpoint)
-    df_elev_grouped["Bar_Width"] = df_elev_grouped["elev_bin"].map(lambda x: widths[x]-2 if x < len(widths) else widths[-1])
+    df_elev_grouped["Bar_Center"] = df_elev_grouped["elev_bin"].map(
+        elev_bin_to_midpoint
+    )
+    df_elev_grouped["Bar_Width"] = df_elev_grouped["elev_bin"].map(
+        lambda x: widths[x] - 2 if x < len(widths) else widths[-1]
+    )
 
     ##########################
     # RIGHT BOTTOM: Third Function Plot (ELA SMB scatter)
@@ -4522,66 +4926,88 @@ def plot_smb_time_and_hyps(file_path_smb, file_path_elev, file_path_zero, output
     fig = plt.figure(figsize=(11, 6.5))
     # Create a GridSpec with 1 row and 2 columns.
     gs_main = gridspec.GridSpec(nrows=1, ncols=2, width_ratios=[1, 1], wspace=0.24)
-    
+
     # Left column: nested GridSpec (2 rows, 1 column) with height ratios [2,1]
-    gs_left = gridspec.GridSpecFromSubplotSpec(nrows=2, ncols=1, subplot_spec=gs_main[0],
-                                               height_ratios=[1.2, 1], hspace=0.2)
+    gs_left = gridspec.GridSpecFromSubplotSpec(
+        nrows=2, ncols=1, subplot_spec=gs_main[0], height_ratios=[1.2, 1], hspace=0.2
+    )
     # Right column: nested GridSpec (2 rows, 1 column) for top and bottom plots
-    gs_right = gridspec.GridSpecFromSubplotSpec(nrows=2, ncols=1, subplot_spec=gs_main[1],
-                                                hspace=0.45)
-        
+    gs_right = gridspec.GridSpecFromSubplotSpec(
+        nrows=2, ncols=1, subplot_spec=gs_main[1], hspace=0.45
+    )
+
     # LEFT TOP: First function, seasonal SMB stacked bars
     ax_left_top = fig.add_subplot(gs_left[0])
     x = np.arange(len(hydro_years))
     bar_width = 0.4
     ax_left_top.bar(
-        x, winter, width=bar_width, label="Winter",
-        color="dodgerblue", alpha=0.4, zorder=3
+        x,
+        winter,
+        width=bar_width,
+        label="Winter",
+        color="dodgerblue",
+        alpha=0.4,
+        zorder=3,
     )
     ax_left_top.bar(
-        x, summer, width=bar_width, label="Summer",
-        color="red", alpha=0.55, zorder=3
+        x, summer, width=bar_width, label="Summer", color="red", alpha=0.55, zorder=3
     )
     ax_left_top.bar(
-        x + bar_width, total, width=bar_width, label="Annual",
-        color="black", zorder=3
+        x + bar_width, total, width=bar_width, label="Annual", color="black", zorder=3
     )
     ax_left_top.set_ylabel("Specific SMB (m we)", fontsize=12)
-    ax_left_top.set_xlim(-0.8, len(hydro_years)-0.3)
+    ax_left_top.set_xlim(-0.8, len(hydro_years) - 0.3)
     ax_left_top.set_ylim(-0.84, 0.6)
-    
+
     # Set tick labels: show every 2nd year
-    tick_labels = [str(year) if i % 2 == 0 else "" for i, year in enumerate(hydro_years)]
+    tick_labels = [
+        str(year) if i % 2 == 0 else "" for i, year in enumerate(hydro_years)
+    ]
 
     # Set x-ticks and hide labels on the top axis
-    ax_left_top.set_xticks(x + bar_width/2)
+    ax_left_top.set_xticks(x + bar_width / 2)
     ax_left_top.set_xticklabels(hydro_years, rotation=45)
 
-    ax_left_top.legend(fontsize=10, loc="upper left", bbox_to_anchor=(0., 0.13),
-                   ncol=3, handletextpad=0.2, columnspacing=0.5, labelspacing=0.2)
+    ax_left_top.legend(
+        fontsize=10,
+        loc="upper left",
+        bbox_to_anchor=(0.0, 0.13),
+        ncol=3,
+        handletextpad=0.2,
+        columnspacing=0.5,
+        labelspacing=0.2,
+    )
     ax_left_top.grid(linestyle="--", alpha=0.7, zorder=0)
 
     # LEFT BOTTOM: First function, cumulative SMB plot
     ax_left_bottom = fig.add_subplot(gs_left[1], sharex=ax_left_top)
     ax_left_bottom.plot(
-        x + bar_width/2, cumulative_smb_gt.values,
-        color="green", marker="o", zorder=3, linewidth=2
+        x + bar_width / 2,
+        cumulative_smb_gt.values,
+        color="green",
+        marker="o",
+        zorder=3,
+        linewidth=2,
     )
     print("Cumulative SMB (Gt):", cumulative_smb_gt)
     ax_left_bottom.set_ylabel("Cumulative SMB (Gt)", fontsize=12)
     ax_left_bottom.set_xlabel("Hydrological Year", fontsize=12)
     ax_left_bottom.grid(linestyle="--", alpha=0.7, zorder=0)
-    ax_left_bottom.set_xticks(x + bar_width/2)
-
+    ax_left_bottom.set_xticks(x + bar_width / 2)
 
     ax_left_bottom.set_xticklabels(tick_labels, rotation=45)
 
     # RIGHT TOP: Second function, hypsometric plot (SMB vs Elevation)
     ax_right_top = fig.add_subplot(gs_right[0])
     # Plot area bars on left y-axis:
-    ax_right_top.bar(df_elev_grouped["Bar_Center"], df_elev_grouped["Total_Area_km2"],
-                    width=df_elev_grouped["Bar_Width"], alpha=1, color="grey",
-                    label="Area")
+    ax_right_top.bar(
+        df_elev_grouped["Bar_Center"],
+        df_elev_grouped["Total_Area_km2"],
+        width=df_elev_grouped["Bar_Width"],
+        alpha=1,
+        color="grey",
+        label="Area",
+    )
     ax_right_top.set_xlabel("Elevation (m)", fontsize=12)
     ax_right_top.set_ylabel("Area (km²)", fontsize=12)
     ax_right_top.set_ylim(0, 2000)
@@ -4591,25 +5017,41 @@ def plot_smb_time_and_hyps(file_path_smb, file_path_elev, file_path_zero, output
     # Add minor ticks to the primary x-axis
     ax_right_top.xaxis.set_minor_locator(ticker.AutoMinorLocator(2))
     # Enable vertical grid lines for both major and minor ticks on the x-axis
-    ax_right_top.grid(which='major', axis='x', linestyle="--", alpha=0.7)
-    ax_right_top.grid(which='minor', axis='x', linestyle=":", alpha=0.5)
+    ax_right_top.grid(which="major", axis="x", linestyle="--", alpha=0.7)
+    ax_right_top.grid(which="minor", axis="x", linestyle=":", alpha=0.5)
 
     # Create secondary y-axis for SMB
     ax_right_top_2 = ax_right_top.twinx()
     palette = sns.color_palette("cool", as_cmap=True)
-    norm = plt.Normalize(df_elev_grouped["Year_Bin"].min(), df_elev_grouped["Year_Bin"].max())
+    norm = plt.Normalize(
+        df_elev_grouped["Year_Bin"].min(), df_elev_grouped["Year_Bin"].max()
+    )
     for year_bin, group in df_elev_grouped.groupby("Year_Bin"):
         if year_bin == 1991:
             label = "1991-2002"
         else:
             label = f"{year_bin}-{year_bin+10}"
-        ax_right_top_2.plot(group["Mean_Elevation"], group["SMB_per_year"]/1000,
-                            marker="o", linestyle="-", color=palette(norm(year_bin)),
-                            label=label, linewidth=2)
+        ax_right_top_2.plot(
+            group["Mean_Elevation"],
+            group["SMB_per_year"] / 1000,
+            marker="o",
+            linestyle="-",
+            color=palette(norm(year_bin)),
+            label=label,
+            linewidth=2,
+        )
     ax_right_top_2.set_ylabel("Annual Specific SMB (m w.e.)", fontsize=12)
     ax_right_top_2.axhline(0, color="black", linestyle="--", linewidth=0.7)
-    ax_right_top_2.legend(loc="upper center", bbox_to_anchor=(0.5, -0.22), ncol=3,
-                        fontsize=10, handletextpad=0.2, columnspacing=0.5, labelspacing=0.2, frameon=False)
+    ax_right_top_2.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.22),
+        ncol=3,
+        fontsize=10,
+        handletextpad=0.2,
+        columnspacing=0.5,
+        labelspacing=0.2,
+        frameon=False,
+    )
     ax_right_top_2.grid(True, axis="y", linestyle="--", alpha=0.7)
 
     # Also add minor ticks on the secondary x-axis (they share the same x-axis)
@@ -4620,15 +5062,25 @@ def plot_smb_time_and_hyps(file_path_smb, file_path_elev, file_path_zero, output
 
     correlation = df_zero["SMB"].corr(df_zero["t_anom"])
     print("Pearson Correlation between SMB and t_anom:", correlation)
-    sc = ax_right_bottom.scatter(df_zero["ELA"], df_zero["SMB"],
-                                c=df_zero["t_anom"], cmap="coolwarm",
-                                vmin=vmin, vmax=vmax, edgecolor="k", s=100)
+    sc = ax_right_bottom.scatter(
+        df_zero["ELA"],
+        df_zero["SMB"],
+        c=df_zero["t_anom"],
+        cmap="coolwarm",
+        vmin=vmin,
+        vmax=vmax,
+        edgecolor="k",
+        s=100,
+    )
     # Annotate the correlation in the top-left corner of the axis
     ax_right_bottom.annotate(
-        f'r(SMB, JJA T_anom) = {correlation:.2f}',
-        xy=(0.95, 0.95), xycoords='axes fraction',
-        fontsize=10, ha='right', va='top',
-        bbox=dict(boxstyle='round', fc='white', alpha=0.7)
+        f"r(SMB, JJA T_anom) = {correlation:.2f}",
+        xy=(0.95, 0.95),
+        xycoords="axes fraction",
+        fontsize=10,
+        ha="right",
+        va="top",
+        bbox=dict(boxstyle="round", fc="white", alpha=0.7),
     )
 
     ax_right_bottom.set_xlabel("ELA (m)", fontsize=12)
@@ -4654,31 +5106,63 @@ def plot_smb_time_and_hyps(file_path_smb, file_path_elev, file_path_zero, output
 
     # Create a new axes for the colorbar, placing it to the right of ax_right_bottom
     # A small gap (0.01) is left between the plot and the colorbar.
-    cbar_ax = fig.add_axes([new_pos[0] + new_pos[2] + 0.01, new_pos[1], cb_space - 0.01, new_pos[3]])
+    cbar_ax = fig.add_axes(
+        [new_pos[0] + new_pos[2] + 0.01, new_pos[1], cb_space - 0.01, new_pos[3]]
+    )
     cbar = plt.colorbar(sc, cax=cbar_ax)
     cbar.set_label("JJA Temp. Anomaly (°C)", fontsize=12)
 
     # Increase x-axis tick density by adding minor ticks:
     ax_right_bottom.xaxis.set_minor_locator(ticker.AutoMinorLocator(2))
     # Enable vertical grid lines for both major and minor ticks on the x-axis:
-    ax_right_bottom.grid(which='major', axis='x', linestyle="--", alpha=0.7)
-    ax_right_bottom.grid(which='minor', axis='x', linestyle=":", alpha=0.5)
-
+    ax_right_bottom.grid(which="major", axis="x", linestyle="--", alpha=0.7)
+    ax_right_bottom.grid(which="minor", axis="x", linestyle=":", alpha=0.5)
 
     # Now, create the colorbar in the new axes
     cbar = plt.colorbar(sc, cax=cbar_ax)
     cbar.set_label("JJA Temp. Anomaly (°C)", fontsize=12)
     # Now add labels (a, b, c, d) to each subplot in the top left corner:
-    ax_left_top.text(-0.1, 1.03, "(a)", transform=ax_left_top.transAxes,
-                    fontsize=16, fontweight="bold", va="bottom", ha="left")
-    ax_left_bottom.text(-0.1, 1.03, "(c)", transform=ax_left_bottom.transAxes,
-                        fontsize=16, fontweight="bold", va="bottom", ha="left")
-    ax_right_top.text(-0.0, 1.03, "(b)", transform=ax_right_top.transAxes,
-                    fontsize=16, fontweight="bold", va="bottom", ha="left")
-    ax_right_bottom.text(-0.0, 1.03, "(d)", transform=ax_right_bottom.transAxes,
-                        fontsize=16, fontweight="bold", va="bottom", ha="left")
+    ax_left_top.text(
+        -0.1,
+        1.03,
+        "(a)",
+        transform=ax_left_top.transAxes,
+        fontsize=16,
+        fontweight="bold",
+        va="bottom",
+        ha="left",
+    )
+    ax_left_bottom.text(
+        -0.1,
+        1.03,
+        "(c)",
+        transform=ax_left_bottom.transAxes,
+        fontsize=16,
+        fontweight="bold",
+        va="bottom",
+        ha="left",
+    )
+    ax_right_top.text(
+        -0.0,
+        1.03,
+        "(b)",
+        transform=ax_right_top.transAxes,
+        fontsize=16,
+        fontweight="bold",
+        va="bottom",
+        ha="left",
+    )
+    ax_right_bottom.text(
+        -0.0,
+        1.03,
+        "(d)",
+        transform=ax_right_bottom.transAxes,
+        fontsize=16,
+        fontweight="bold",
+        va="bottom",
+        ha="left",
+    )
     plt.tight_layout()
-
 
     # Save the combined plot
     combined_plot_path_png = os.path.join(output_dir, "FI_mass_balance_combined.png")
@@ -4687,6 +5171,3 @@ def plot_smb_time_and_hyps(file_path_smb, file_path_elev, file_path_zero, output
     plt.savefig(combined_plot_path_pdf, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"Combined plot saved to {combined_plot_path_png}")
-  
-
-
